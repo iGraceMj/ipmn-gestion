@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>IPMN — Système de Gestion du Lycée</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ══════════════════════════════════════════════════════
+   IPMN DESIGN SYSTEM — Modifiez les couleurs ici
+   ══════════════════════════════════════════════════════ */
+:root {
+  /* Couleurs principales — changez --gold pour la couleur de l'école */
+  --bg:   #08101f;
+  --s1:   #0d1828;
+  --s2:   #121f34;
+  --s3:   #182740;
+  --gold: #b8860b;   /* ← couleur principale IPMN */
+  --g2:   #d4a017;
+  --gdim: rgba(184,134,11,.13);
+  --tx:   #e2d9c8;
+  --sub:  #7a8899;
+  --w:    #f5f0e8;
+  --ok:   #22c55e;
+  --err:  #ef4444;
+  --info: #3b82f6;
+  --warn: #f59e0b;
+  --r:9px; --rs:5px;
+  --sh:0 6px 28px rgba(0,0,0,.55);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;overflow-x:hidden}
+h1,h2,h3,h4{font-family:'Playfair Display',serif;color:var(--w)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--gold);border-radius:2px}
+
+/* ── LAYOUT ── */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:248px;background:var(--s1);border-right:1px solid rgba(184,134,11,.14);
+  display:flex;flex-direction:column;position:fixed;inset-y:0;left:0;z-index:90;overflow-y:auto}
+.sb-logo{padding:18px 15px 14px;border-bottom:1px solid rgba(184,134,11,.1);text-align:center}
+.sb-logo .logo-icon{font-size:2.2rem;margin-bottom:4px}
+.sb-logo h2{color:var(--gold);font-size:.92rem;letter-spacing:.06em;line-height:1.3}
+.sb-logo p{color:var(--sub);font-size:.63rem;margin-top:2px}
+.sb-logo .badge-ipmn{background:var(--gdim);border:1px solid rgba(184,134,11,.25);color:var(--gold);
+  font-size:.6rem;padding:2px 8px;border-radius:20px;display:inline-block;margin-top:5px}
+.sb-nav{padding:8px 7px;flex:1}
+.sb-sec{color:var(--sub);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;padding:9px 8px 3px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:var(--rs);
+  cursor:pointer;transition:all .15s;color:var(--sub);font-size:.81rem;font-weight:500;margin-bottom:1px}
+.sb-item:hover{background:var(--gdim);color:var(--tx)}
+.sb-item.on{background:rgba(184,134,11,.19);color:var(--gold)}
+.sb-item .ic{font-size:.88rem;width:16px;text-align:center;flex-shrink:0}
+.sb-item .pill{margin-left:auto;background:var(--err);color:#fff;font-size:.57rem;
+  font-weight:700;padding:1px 5px;border-radius:20px}
+.sb-foot{padding:11px 12px;border-top:1px solid rgba(184,134,11,.1);display:flex;align-items:center;gap:8px}
+.main{margin-left:248px;display:flex;flex-direction:column;min-height:100vh;flex:1}
+.topbar{background:var(--s1);border-bottom:1px solid rgba(184,134,11,.08);
+  padding:12px 24px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:50}
+.topbar h1{font-size:1.15rem}
+.page{padding:22px 24px;flex:1}
+
+/* ── CARDS ── */
+.card{background:var(--s1);border:1px solid rgba(184,134,11,.1);border-radius:var(--r);padding:17px;box-shadow:var(--sh)}
+.ci{background:var(--s2);border:1px solid rgba(255,255,255,.05);border-radius:var(--rs);padding:13px}
+.sg{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:11px;margin-bottom:18px}
+.sc{background:var(--s2);border:1px solid rgba(184,134,11,.1);border-radius:var(--r);
+  padding:15px;position:relative;overflow:hidden;transition:transform .2s}
+.sc:hover{transform:translateY(-2px)}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--gold),transparent)}
+.sc-n{font-size:1.8rem;font-weight:700;color:var(--gold);font-family:'Playfair Display',serif}
+.sc-l{color:var(--sub);font-size:.7rem;margin-top:2px}
+.sc-i{position:absolute;right:11px;top:11px;font-size:1.4rem;opacity:.13}
+
+/* ── TABLE ── */
+.tw{overflow-x:auto;border-radius:var(--r);border:1px solid rgba(184,134,11,.1)}
+table{width:100%;border-collapse:collapse}
+thead{background:rgba(184,134,11,.07)}
+th{padding:9px 13px;text-align:left;color:var(--gold);font-size:.66rem;
+  letter-spacing:.09em;text-transform:uppercase;font-weight:600;white-space:nowrap}
+td{padding:9px 13px;font-size:.82rem;border-top:1px solid rgba(255,255,255,.04)}
+tr:hover td{background:rgba(184,134,11,.03)}
+.chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:600;white-space:nowrap}
+.c-ok{background:rgba(34,197,94,.13);color:var(--ok)}
+.c-err{background:rgba(239,68,68,.13);color:var(--err)}
+.c-info{background:rgba(59,130,246,.13);color:var(--info)}
+.c-warn{background:rgba(245,158,11,.13);color:var(--warn)}
+.c-gold{background:rgba(184,134,11,.15);color:var(--gold)}
+.c-purple{background:rgba(139,92,246,.13);color:#a78bfa}
+
+/* ── FORMS ── */
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.fg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px}
+.fg.full{grid-column:1/-1}
+label{font-size:.72rem;color:var(--sub);font-weight:500}
+input,select,textarea{background:var(--s2);border:1px solid rgba(184,134,11,.18);border-radius:var(--rs);
+  padding:7px 10px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:.82rem;
+  outline:none;transition:border-color .2s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(184,134,11,.09)}
+input::placeholder{color:var(--sub)}
+select option{background:var(--s2)}
+textarea{resize:vertical;min-height:72px}
+input[type=checkbox],input[type=radio]{width:auto}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--rs);
+  border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;
+  transition:all .16s;white-space:nowrap;user-select:none}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.b-gold{background:linear-gradient(135deg,var(--gold),var(--g2));color:#fff}
+.b-gold:hover:not(:disabled){filter:brightness(1.1);box-shadow:0 4px 14px rgba(184,134,11,.4)}
+.b-out{background:transparent;border:1px solid rgba(184,134,11,.28);color:var(--gold)}
+.b-out:hover{background:var(--gdim)}
+.b-ghost{background:transparent;color:var(--sub)}
+.b-ghost:hover{color:var(--tx);background:rgba(255,255,255,.05)}
+.b-err{background:rgba(239,68,68,.12);color:var(--err);border:1px solid rgba(239,68,68,.25)}
+.b-info{background:rgba(59,130,246,.12);color:var(--info);border:1px solid rgba(59,130,246,.25)}
+.b-ok{background:rgba(34,197,94,.12);color:var(--ok);border:1px solid rgba(34,197,94,.25)}
+.b-sm{padding:4px 10px;font-size:.74rem}
+.b-xs{padding:2px 7px;font-size:.67rem}
+.b-ic{padding:5px}
+
+/* ── MODAL ── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.77);z-index:200;
+  display:flex;align-items:center;justify-content:center;padding:14px;animation:fi .17s}
+.modal{background:var(--s1);border:1px solid rgba(184,134,11,.18);border-radius:12px;
+  padding:24px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto;animation:su .2s ease-out}
+.modal-lg{max-width:800px}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes su{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── AUTH ── */
+.auth-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:18px;
+  background:radial-gradient(ellipse at 30% 50%,rgba(184,134,11,.07) 0%,transparent 55%),var(--bg)}
+.auth-card{width:100%;max-width:420px;background:var(--s1);border:1px solid rgba(184,134,11,.18);
+  border-radius:14px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.tabs{display:flex;background:var(--s2);border-radius:var(--rs);overflow:hidden;margin-bottom:20px}
+.tab{flex:1;padding:8px;text-align:center;cursor:pointer;font-size:.82rem;font-weight:500;
+  color:var(--sub);transition:all .18s}
+.tab.on{background:var(--gold);color:#fff;font-weight:700}
+
+/* ── SCHEDULE ── */
+.sched{display:grid;grid-template-columns:52px repeat(5,1fr);
+  border:1px solid rgba(184,134,11,.1);border-radius:var(--r);overflow:hidden;background:var(--s1)}
+.sh-h{background:rgba(184,134,11,.07);padding:8px 4px;text-align:center;
+  font-size:.66rem;font-weight:600;color:var(--gold);border-bottom:1px solid rgba(184,134,11,.1)}
+.sh-t{background:rgba(0,0,0,.2);padding:4px;display:flex;align-items:center;justify-content:center;
+  font-size:.6rem;color:var(--sub);border-bottom:1px solid rgba(255,255,255,.03);
+  border-right:1px solid rgba(184,134,11,.08)}
+.sh-c{padding:2px;border-bottom:1px solid rgba(255,255,255,.03);border-right:1px solid rgba(184,134,11,.04)}
+.sh-b{border-radius:var(--rs);padding:4px 5px;font-size:.65rem;height:100%;
+  display:flex;flex-direction:column;justify-content:center;cursor:pointer;transition:filter .14s;min-height:38px}
+.sh-b:hover{filter:brightness(1.12)}
+
+/* ── COMPTA COLORS ── */
+.pay-ok{color:var(--ok);font-weight:700}
+.pay-part{color:var(--warn);font-weight:700}
+.pay-no{color:var(--err);font-weight:700}
+
+/* ── MISC ── */
+.row{display:flex;align-items:center}
+.rowb{display:flex;align-items:center;justify-content:space-between}
+.col{display:flex;flex-direction:column}
+.g1{gap:5px}.g2{gap:9px}.g3{gap:13px}.g4{gap:18px}
+.mt1{margin-top:5px}.mt2{margin-top:10px}.mt3{margin-top:16px}.mt4{margin-top:22px}
+.mb1{margin-bottom:5px}.mb2{margin-bottom:10px}.mb3{margin-bottom:16px}.mb4{margin-bottom:22px}
+.sub{color:var(--sub);font-size:.78rem}
+.gold{color:var(--gold)}
+.pb{height:4px;background:var(--s3);border-radius:3px;overflow:hidden}
+.pf{height:100%;background:linear-gradient(90deg,var(--gold),var(--g2));transition:width .4s}
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;
+  color:#fff;flex-shrink:0;background:linear-gradient(135deg,var(--gold),var(--g2));font-size:.75rem}
+.divider{display:flex;align-items:center;gap:9px;color:var(--sub);font-size:.72rem;margin:13px 0}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07)}
+.empty{text-align:center;padding:40px 18px;color:var(--sub)}
+.empty .ei{font-size:2.2rem;margin-bottom:9px;opacity:.35}
+.tag{background:var(--s3);border:1px solid rgba(255,255,255,.07);color:var(--sub);
+  font-size:.64rem;padding:2px 7px;border-radius:20px}
+.err-box{background:rgba(239,68,68,.09);border:1px solid rgba(239,68,68,.22);
+  border-radius:var(--rs);padding:8px 12px;font-size:.78rem;color:var(--err);margin-bottom:12px}
+.ok-box{background:rgba(34,197,94,.09);border:1px solid rgba(34,197,94,.22);
+  border-radius:var(--rs);padding:8px 12px;font-size:.78rem;color:var(--ok);margin-bottom:12px}
+.info-box{background:rgba(59,130,246,.09);border:1px solid rgba(59,130,246,.22);
+  border-radius:var(--rs);padding:10px 14px;font-size:.8rem;color:var(--info)}
+.toast{position:fixed;bottom:16px;right:16px;z-index:300;
+  background:var(--s2);border:1px solid rgba(184,134,11,.25);border-radius:var(--rs);
+  padding:10px 15px;display:flex;align-items:center;gap:9px;box-shadow:var(--sh);
+  animation:su .2s ease-out;font-size:.82rem;max-width:310px}
+.sep{height:1px;background:rgba(255,255,255,.06);margin:14px 0}
+.code-block{background:var(--s3);border:1px solid rgba(184,134,11,.15);border-radius:var(--rs);
+  padding:12px 14px;font-family:monospace;font-size:.78rem;color:var(--g2);line-height:1.6;
+  overflow-x:auto;white-space:pre}
+.step-num{width:24px;height:24px;border-radius:50%;background:var(--gold);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, createContext, useContext } = React;
+
+/* ══════════════════════════════════════════════════════════
+   ██  DONNÉES IPMN — Modifiez ici pour personnaliser
+   ══════════════════════════════════════════════════════════ */
+
+// ── INFOS ÉCOLE (modifiables dans Paramètres)
+const SCHOOL_INFO_DEFAULT = {
+  nom: "Institution Privée Marie NDZABA",
+  sigle: "IPMN",
+  adresse: "Angoubou – Franceville, GABON – 272 G2 207",
+  tel: "+241 066 89 79 79 / 074 58 20 22",
+  email: "ipmn@mndzaba.com",
+  fondation: "Fondation Antseleve Oyima",
+  proviseure: "Mme NGOUGUEBRIGUI épse BOULANDI Wendy",
+  annee: "2024 - 2025",
+  trimestre: "1er Trimestre",
+};
+
+// ── CLASSES IPMN (structure réelle)
+const CLASSES_IPMN = [
+  // PREMIER CYCLE
+  {id:"6A",nom:"6ème A",cycle:"1er Cycle",niveau:"6ème",max:45,salle:"101",pp:"",filiere:"Général"},
+  {id:"6B",nom:"6ème B",cycle:"1er Cycle",niveau:"6ème",max:42,salle:"102",pp:"",filiere:"Général"},
+  {id:"6C",nom:"6ème C",cycle:"1er Cycle",niveau:"6ème",max:41,salle:"103",pp:"",filiere:"Général"},
+  {id:"6D",nom:"6ème D",cycle:"1er Cycle",niveau:"6ème",max:47,salle:"104",pp:"",filiere:"Général"},
+  {id:"5A",nom:"5ème A",cycle:"1er Cycle",niveau:"5ème",max:47,salle:"105",pp:"",filiere:"Général"},
+  {id:"5B",nom:"5ème B",cycle:"1er Cycle",niveau:"5ème",max:42,salle:"106",pp:"",filiere:"Général"},
+  {id:"4A",nom:"4ème A",cycle:"1er Cycle",niveau:"4ème",max:35,salle:"107",pp:"",filiere:"Général"},
+  {id:"3A",nom:"3ème A",cycle:"1er Cycle",niveau:"3ème",max:35,salle:"108",pp:"",filiere:"Général"},
+  {id:"3B",nom:"3ème B",cycle:"1er Cycle",niveau:"3ème",max:35,salle:"109",pp:"",filiere:"Général"},
+  // SECOND CYCLE
+  {id:"2LE",nom:"2nde LE",cycle:"2nd Cycle",niveau:"Seconde",max:35,salle:"201",pp:"",filiere:"Littéraire-Économique"},
+  {id:"2S",nom:"2nde S",cycle:"2nd Cycle",niveau:"Seconde",max:35,salle:"202",pp:"",filiere:"Scientifique"},
+  {id:"1A1",nom:"1re A1",cycle:"2nd Cycle",niveau:"Première",max:30,salle:"203",pp:"SIMB II Marcelin",filiere:"Littéraire"},
+  {id:"1A2",nom:"1re A2",cycle:"2nd Cycle",niveau:"Première",max:30,salle:"204",pp:"",filiere:"Littéraire"},
+  {id:"1B",nom:"1re B",cycle:"2nd Cycle",niveau:"Première",max:30,salle:"205",pp:"",filiere:"Économique"},
+  {id:"1S",nom:"1re S",cycle:"2nd Cycle",niveau:"Première",max:30,salle:"206",pp:"",filiere:"Scientifique"},
+  {id:"TA1",nom:"Tle A1",cycle:"2nd Cycle",niveau:"Terminale",max:30,salle:"301",pp:"",filiere:"Littéraire"},
+  {id:"TA2",nom:"Tle A2",cycle:"2nd Cycle",niveau:"Terminale",max:30,salle:"302",pp:"",filiere:"Littéraire"},
+  {id:"TB",nom:"Tle B",cycle:"2nd Cycle",niveau:"Terminale",max:30,salle:"303",pp:"",filiere:"Économique"},
+  {id:"TC",nom:"Tle C",cycle:"2nd Cycle",niveau:"Terminale",max:25,salle:"304",pp:"",filiere:"Scientifique"},
+  {id:"TD",nom:"Tle D",cycle:"2nd Cycle",niveau:"Terminale",max:25,salle:"305",pp:"",filiere:"Scientifique"},
+];
+
+// ── MATIÈRES APC (système palier IPMN)
+const MATIERES_APC = {
+  "Mathématiques":     {color:"#3b82f6", coeff:3},
+  "Physique-Chimie":   {color:"#8b5cf6", coeff:2},
+  "SVT":               {color:"#10b981", coeff:2},
+  "Français":          {color:"#22c55e", coeff:3},
+  "Anglais (LV1)":     {color:"#ec4899", coeff:2},
+  "Histoire-Géo":      {color:"#f59e0b", coeff:2},
+  "Éducation Civique": {color:"#06b6d4", coeff:1},
+  "EPS":               {color:"#84cc16", coeff:2},
+  "Économie Familiale":{color:"#f97316", coeff:1},
+  "Philosophie":       {color:"#a855f7", coeff:2},
+  "Espagnol (LV2)":    {color:"#ef4444", coeff:2},
+  "Allemand (LV2)":    {color:"#64748b", coeff:2},
+};
+
+// ── FRAIS DE SCOLARITÉ PAR NIVEAU
+const FRAIS_SCOLARITE = {
+  "6ème":    { inscription:50000, tranche1:150000, tranche2:150000, tranche3:150000 },
+  "5ème":    { inscription:50000, tranche1:150000, tranche2:150000, tranche3:150000 },
+  "4ème":    { inscription:50000, tranche1:160000, tranche2:160000, tranche3:160000 },
+  "3ème":    { inscription:50000, tranche1:170000, tranche2:170000, tranche3:170000 },
+  "Seconde": { inscription:60000, tranche1:200000, tranche2:200000, tranche3:200000 },
+  "Première":{ inscription:60000, tranche1:220000, tranche2:220000, tranche3:220000 },
+  "Terminale":{inscription:60000, tranche1:250000, tranche2:250000, tranche3:250000 },
+};
+
+// ── ÉLÈVES IPMN (données réelles 5ème A issues des documents)
+const STUDENTS_INIT = [
+  // 5ème A
+  {id:"IPMN24-01001",nom:"AGNASSA OTTAMBOT",prenom:"Florent Adams",email:"f.agnassa@ipmn.ga",tel:"",classe:"5ème A",niveau:"5ème",ddn:"2010-05-12",di:"2024-09-02",genre:"M",statut:"Actif",responsable:"",tel_resp:"",matricule:"IPMN24-01001",
+   paiements:{inscription:"payé",tranche1:"payé",tranche2:"partiel",tranche3:"non"},
+   notes:{"Mathématiques":{p1:4,rp1:8,p2:18,dm:16},"Physique-Chimie":{p1:2,rp1:12,p2:13,dm:12},"SVT":{p1:10,rp1:10,p2:0,dm:12},"Français":{p1:10,rp1:0,p2:14,dm:13},"Anglais (LV1)":{p1:5,rp1:7,p2:8,dm:0},"Histoire-Géo":{p1:7,rp1:7,p2:12,dm:14},"Éducation Civique":{p1:8,rp1:0,p2:15,dm:12},"EPS":{p1:13,rp1:13,p2:14,dm:0}}},
+  {id:"IPMN24-01002",nom:"ANGAPARI PAKAMOYE",prenom:"Loïce Flora",email:"l.angapari@ipmn.ga",tel:"",classe:"5ème A",niveau:"5ème",ddn:"2010-03-22",di:"2024-09-02",genre:"F",statut:"Actif",responsable:"",tel_resp:"",matricule:"IPMN24-01002",
+   paiements:{inscription:"payé",tranche1:"payé",tranche2:"payé",tranche3:"non"},
+   notes:{"Mathématiques":{p1:7,rp1:15,p2:2,dm:12},"Physique-Chimie":{p1:12,rp1:11,p2:11,dm:20},"SVT":{p1:7,rp1:14,p2:14,dm:16},"Français":{p1:7,rp1:0,p2:13,dm:16},"Anglais (LV1)":{p1:7,rp1:13,p2:11,dm:0},"Histoire-Géo":{p1:13,rp1:8,p2:13,dm:14},"Éducation Civique":{p1:9,rp1:0,p2:13,dm:13},"EPS":{p1:14,rp1:13,p2:14,dm:0}}},
+  {id:"IPMN24-01003",nom:"FORTUNE EZECHI",prenom:"Sanday",email:"s.fortune@ipmn.ga",tel:"",classe:"5ème A",niveau:"5ème",ddn:"2009-11-05",di:"2024-09-02",genre:"M",statut:"Actif",responsable:"",tel_resp:"",matricule:"IPMN24-01003",
+   paiements:{inscription:"payé",tranche1:"payé",tranche2:"payé",tranche3:"payé"},
+   notes:{"Mathématiques":{p1:10,rp1:18,p2:7,dm:20},"Physique-Chimie":{p1:15,rp1:9,p2:2,dm:15},"SVT":{p1:17,rp1:15,p2:10,dm:15},"Français":{p1:4,rp1:0,p2:12,dm:16},"Anglais (LV1)":{p1:13,rp1:17,p2:17,dm:0},"Histoire-Géo":{p1:14,rp1:10,p2:14,dm:15},"Éducation Civique":{p1:9,rp1:0,p2:14,dm:15},"EPS":{p1:12,rp1:12,p2:13,dm:0}}},
+  // 5ème B
+  {id:"IPMN24-02001",nom:"HAMPSHIRE",prenom:"Gabriella",email:"g.hampshire@ipmn.ga",tel:"",classe:"5ème B",niveau:"5ème",ddn:"2010-01-18",di:"2024-09-02",genre:"F",statut:"Actif",responsable:"",tel_resp:"",matricule:"IPMN24-02001",
+   paiements:{inscription:"payé",tranche1:"payé",tranche2:"payé",tranche3:"payé"},
+   notes:{"Mathématiques":{p1:10,rp1:19,p2:16,dm:0},"Physique-Chimie":{p1:14,rp1:17,p2:19,dm:20},"SVT":{p1:6,rp1:19,p2:12,dm:15},"Français":{p1:8,rp1:0,p2:0,dm:14},"Anglais (LV1)":{p1:20,rp1:20,p2:20,dm:20},"Histoire-Géo":{p1:15,rp1:0,p2:13,dm:17},"Éducation Civique":{p1:9,rp1:0,p2:15,dm:18},"EPS":{p1:13,rp1:13,p2:13,dm:0}}},
+  {id:"IPMN24-02002",nom:"LENDOYE BELLA",prenom:"Kellog Nathan",email:"k.lendoye@ipmn.ga",tel:"",classe:"5ème B",niveau:"5ème",ddn:"2010-07-09",di:"2024-09-02",genre:"M",statut:"Actif",responsable:"",tel_resp:"",matricule:"IPMN24-02002",
+   paiements:{inscription:"payé",tranche1:"payé",tranche2:"non",tranche3:"non"},
+   notes:{"Mathématiques":{p1:11,rp1:19,p2:13,dm:0},"Physique-Chimie":{p1:4,rp1:12,p2:14,dm:15},"SVT":{p1:5,rp1:9,p2:14,dm:14},"Français":{p1:8,rp1:0,p2:0,dm:13},"Anglais (LV1)":{p1:5,rp1:15,p2:15,dm:15},"Histoire-Géo":{p1:9,rp1:0,p2:10,dm:12},"Éducation Civique":{p1:11,rp1:0,p2:13,dm:17},"EPS":{p1:15,rp1:12,p2:13,dm:0}}},
+  // 6ème A
+  {id:"IPMN24-03001",nom:"ABATA EBAH",prenom:"Marie Léa",email:"ml.abata@ipmn.ga",tel:"",classe:"6ème A",niveau:"6ème",ddn:"2012-04-14",di:"2024-09-03",genre:"F",statut:"Actif",responsable:"",tel_resp:"",matricule:"IPMN24-03001",
+   paiements:{inscription:"payé",tranche1:"payé",tranche2:"partiel",tranche3:"non"},
+   notes:{}},
+  // Terminale 3ème
+  {id:"IPMN24-01694",nom:"OTHA NGOUAMBILA",prenom:"",email:"otha@ipmn.ga",tel:"",classe:"3ème A",niveau:"3ème",ddn:"2010-03-29",di:"2024-09-02",genre:"M",statut:"Actif",responsable:"",tel_resp:"",matricule:"IPMN24-01694",
+   paiements:{inscription:"payé",tranche1:"payé",tranche2:"non",tranche3:"non"},
+   notes:{}},
+];
+
+// ── PROFESSEURS IPMN
+const PROFS_INIT = [
+  {id:"P001",nom:"BOULANDI",prenom:"Aimé Christian",email:"ac.boulandi@ipmn.ga",matiere:"Physique-Chimie",statut:"Actif",classes:["Tle A1","Tle A2","Tle B"],tel:"",matricule:"188373M"},
+  {id:"P002",nom:"OUSMANE",prenom:"Amadou",email:"a.ousmane@ipmn.ga",matiere:"Histoire-Géo",statut:"Actif",classes:["5ème A","5ème B"],tel:"",matricule:"118657B"},
+  {id:"P003",nom:"NZE METOGO",prenom:"Aimery Tardeli",email:"at.nze@ipmn.ga",matiere:"EPS",statut:"Actif",classes:["6ème A","6ème B","5ème A"],tel:"",matricule:"202203000371R"},
+  {id:"P004",nom:"NGOUA ALLOGHO",prenom:"Rodrigue",email:"r.ngoua@ipmn.ga",matiere:"Espagnol (LV2)",statut:"Actif",classes:["Tle A1","Tle A2"],tel:"",matricule:"163239R"},
+  {id:"P005",nom:"OSSA NKOGHE",prenom:"Wilfrid",email:"w.ossa@ipmn.ga",matiere:"Économie",statut:"Actif",classes:["1re B","Tle B"],tel:"",matricule:"202203014070M"},
+  {id:"P006",nom:"SIMB II",prenom:"Marcelin",email:"m.simb@ipmn.ga",matiere:"Français",statut:"Actif",classes:["1re A1"],tel:"",matricule:"P006"},
+  {id:"P007",nom:"MASSOLO MOUTSINGA",prenom:"Anaïse",email:"a.massolo@ipmn.ga",matiere:"Vie Scolaire",statut:"Actif",classes:[],tel:"",matricule:"P007"},
+  {id:"P008",nom:"SANGAVE",prenom:"Maurice",email:"m.sangave@ipmn.ga",matiere:"Mathématiques",statut:"Actif",classes:["Tle C","Tle D"],tel:"",matricule:"P008"},
+];
+
+// ── ABSENCES
+const ABSENCES_INIT = [
+  {id:"AB01",eleve:"IPMN24-01001",date:"2025-01-15",heure:"8h00",motif:"Maladie",justifie:true,type:"Absence"},
+  {id:"AB02",eleve:"IPMN24-01002",date:"2025-01-20",heure:"10h50",motif:"Retard transport",justifie:true,type:"Retard"},
+  {id:"AB03",eleve:"IPMN24-01694",date:"2025-01-22",heure:"8h00",motif:"",justifie:false,type:"Absence"},
+];
+
+// ── ANNONCES
+const ANNONCES_INIT = [
+  {id:1,titre:"Examens blancs BEPC/BAC — Février 2026",date:"2026-02-21",type:"Examen",cible:"3ème & Terminales",auteur:"Direction",contenu:"Les examens blancs se déroulent du 21 au 28 février 2026. EPS le samedi 21, écrits du lundi 23 au vendredi 27, oraux vendredi 27 et samedi 28."},
+  {id:2,titre:"Remise des bulletins — T1",date:"2025-11-15",type:"Bulletin",cible:"Tous",auteur:"Direction",contenu:"La remise des bulletins du 1er trimestre aura lieu le samedi 15 novembre 2025. Les parents sont invités à venir récupérer les bulletins avec leurs enfants."},
+  {id:3,titre:"Conseils de classes T1",date:"2025-11-12",type:"Conseil",cible:"Tous niveaux",auteur:"Direction",contenu:"Les conseils de classes du 1er trimestre auront lieu le mercredi 12 novembre 2025."},
+  {id:4,titre:"Arrêt des notes T1",date:"2025-11-08",type:"Administratif",cible:"Enseignants",auteur:"Direction",contenu:"L'arrêt des notes du 1er trimestre est fixé au samedi 8 novembre 2025. Aucune note ne sera acceptée après cette date."},
+];
+
+// ── HORAIRES IPMN
+const HORAIRES = ["7h30","8h25","9h25","10h20","11h15","13h30","14h25","15h20","16h15"];
+const JOURS    = ["Lundi","Mardi","Mercredi","Jeudi","Vendredi"];
+
+/* ══════════════════════════════════════════════════════════
+   HELPERS
+   ══════════════════════════════════════════════════════════ */
+const fmtXAF = n => new Intl.NumberFormat('fr-GA',{style:'decimal'}).format(n) + " XAF";
+const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length).toFixed(1) : "-";
+
+const calcMoyNote = (notes) => {
+  // Système palier IPMN : on prend max(p1, rp1) et p2 et dm
+  let total=0, count=0;
+  Object.entries(notes).forEach(([mat,n])=>{
+    const coeff = (MATIERES_APC[mat]||{coeff:1}).coeff;
+    const best_p1 = Math.max(n.p1||0, n.rp1||0);
+    const vals = [best_p1, n.p2, n.dm].filter(x=>x && x>0);
+    if (vals.length) { total += (vals.reduce((a,b)=>a+b,0)/vals.length)*coeff; count+=coeff; }
+  });
+  return count ? (total/count).toFixed(2) : "-";
+};
+
+const nc = n => parseFloat(n)>=14?"var(--ok)":parseFloat(n)>=10?"var(--gold)":"var(--err)";
+const sc_chip = s => s==="Actif"?"c-ok":s==="Suspendu"?"c-err":s==="Congé"?"c-warn":"c-info";
+
+const paiChip = s => s==="payé"?"c-ok":s==="partiel"?"c-warn":"c-err";
+const paiLabel = s => s==="payé"?"✓ Payé":s==="partiel"?"~ Partiel":"✗ Non payé";
+
+const getNiveau = classe => CLASSES_IPMN.find(c=>c.nom===classe)?.niveau||"";
+
+const getCycleStat = (students) => {
+  const c1 = students.filter(s=>CLASSES_IPMN.find(c=>c.nom===s.classe)?.cycle==="1er Cycle").length;
+  const c2 = students.filter(s=>CLASSES_IPMN.find(c=>c.nom===s.classe)?.cycle==="2nd Cycle").length;
+  return {c1,c2};
+};
+
+const Ctx = createContext(null);
+const useApp = () => useContext(Ctx);
+
+/* ══════════════════════════════════════════════════════════
+   COMPOSANTS DE BASE
+   ══════════════════════════════════════════════════════════ */
+function Toast({msg,type,onClose}){
+  useEffect(()=>{const t=setTimeout(onClose,3500);return()=>clearTimeout(t)},[]);
+  const ic={success:"✅",error:"❌",info:"ℹ️",warn:"⚠️"};
+  return <div className="toast"><span>{ic[type]||ic.info}</span><span style={{flex:1}}>{msg}</span>
+    <button className="btn b-ghost b-ic" onClick={onClose}>✕</button></div>;
+}
+
+function Av({prenom="?",nom="",size=30,color}){
+  const bg=color||"linear-gradient(135deg,var(--gold),var(--g2))";
+  return <div className="av" style={{width:size,height:size,background:bg,fontSize:size*.28}}>{(prenom||"?")[0]}{(nom||"")[0]}</div>;
+}
+
+function Modal({title,onClose,children,large}){
+  return <div className="ov" onClick={e=>e.target===e.currentTarget&&onClose()}>
+    <div className={`modal${large?" modal-lg":""}`}>
+      <div className="rowb mb3"><h3 style={{fontSize:"1.05rem"}}>{title}</h3>
+        <button className="btn b-ghost b-ic" onClick={onClose}>✕</button></div>
+      {children}
+    </div>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   AUTH
+   ══════════════════════════════════════════════════════════ */
+function Auth({onLogin}){
+  const [tab,setTab]=useState("login");
+  const [f,setF]=useState({email:"",password:"",nom:"",prenom:"",role:"eleve",classe:"5ème A",ddn:""});
+  const [loading,setLoading]=useState(false);
+  const [err,setErr]=useState("");
+  const up=k=>e=>setF(p=>({...p,[k]:e.target.value}));
+
+  const submit=()=>{
+    setErr("");setLoading(true);
+    setTimeout(()=>{
+      setLoading(false);
+      if(tab==="login"){
+        if(f.email==="admin@ipmn.ga"&&f.password==="ipmn2025") return onLogin({nom:"NGOUGUEBRIGUI épse BOULANDI",prenom:"Wendy",role:"admin",email:f.email,poste:"Proviseure"});
+        if(f.email==="censeur@ipmn.ga"&&f.password==="ipmn") return onLogin({nom:"PITAKE épse ONDO NKOULOU",prenom:"Michelle",role:"censeur",email:f.email,poste:"Censeure"});
+        if(f.email==="compta@ipmn.ga"&&f.password==="ipmn") return onLogin({nom:"Comptabilité",prenom:"Service",role:"comptable",email:f.email,poste:"Comptable"});
+        const st=STUDENTS_INIT.find(s=>s.email===f.email);
+        if(st) return onLogin({...st,role:"eleve"});
+        const pr=PROFS_INIT.find(p=>p.email===f.email);
+        if(pr) return onLogin({...pr,role:"professeur"});
+        setErr("Identifiants incorrects. Essayez les accès démo.");
+      } else {
+        if(!f.nom||!f.prenom||!f.email){setErr("Champs obligatoires.");return;}
+        onLogin({...f,id:"NOUVEAU",statut:"En attente de validation",di:new Date().toISOString().split("T")[0]});
+      }
+    },700);
+  };
+
+  return <div className="auth-bg">
+    <div className="auth-card">
+      <div style={{textAlign:"center",marginBottom:22}}>
+        <div style={{fontSize:"2.4rem"}}>🏫</div>
+        <h1 style={{fontSize:"1.3rem",color:"var(--gold)",marginTop:5}}>Institution Privée</h1>
+        <h2 style={{fontSize:"1rem",color:"var(--w)",fontWeight:400,marginTop:2}}>Marie NDZABA</h2>
+        <div className="sub" style={{fontSize:".7rem",marginTop:4}}>Franceville, Gabon — Année {SCHOOL_INFO_DEFAULT.annee}</div>
+      </div>
+      <div className="tabs mb3">
+        <div className={`tab${tab==="login"?" on":""}`} onClick={()=>setTab("login")}>Connexion</div>
+        <div className={`tab${tab==="reg"?" on":""}`} onClick={()=>setTab("reg")}>Inscription</div>
+      </div>
+      {err&&<div className="err-box">{err}</div>}
+
+      {tab==="login"?(
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <div className="fg"><label>Adresse e-mail</label><input type="email" placeholder="prenom.nom@ipmn.ga" value={f.email} onChange={up("email")}/></div>
+          <div className="fg"><label>Mot de passe</label><input type="password" placeholder="••••••••" value={f.password} onChange={up("password")}/></div>
+          <div className="divider">Accès démo</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+            {[
+              {l:"👑 Admin/Proviseure",e:"admin@ipmn.ga",p:"ipmn2025"},
+              {l:"📋 Censeur",e:"censeur@ipmn.ga",p:"ipmn"},
+              {l:"💰 Comptabilité",e:"compta@ipmn.ga",p:"ipmn"},
+              {l:"🎒 Élève",e:"f.agnassa@ipmn.ga",p:"x"},
+            ].map(d=>(
+              <button key={d.l} className="btn b-out b-sm" style={{justifyContent:"center",fontSize:".7rem"}}
+                onClick={()=>setF(p=>({...p,email:d.e,password:d.p}))}>{d.l}</button>
+            ))}
+          </div>
+          <button className="btn b-gold mt2" style={{width:"100%",justifyContent:"center",padding:"10px"}}
+            onClick={submit} disabled={loading}>{loading?"Connexion…":"Se connecter →"}</button>
+        </div>
+      ):(
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <div className="fg2">
+            <div className="fg"><label>Nom *</label><input value={f.nom} onChange={up("nom")}/></div>
+            <div className="fg"><label>Prénom *</label><input value={f.prenom} onChange={up("prenom")}/></div>
+          </div>
+          <div className="fg"><label>Email *</label><input type="email" value={f.email} onChange={up("email")}/></div>
+          <div className="fg2">
+            <div className="fg"><label>Rôle</label>
+              <select value={f.role} onChange={up("role")}><option value="eleve">Élève</option><option value="parent">Parent</option><option value="professeur">Professeur</option></select></div>
+            <div className="fg"><label>Date de naissance</label><input type="date" value={f.ddn} onChange={up("ddn")}/></div>
+          </div>
+          {f.role==="eleve"&&<div className="fg"><label>Classe</label>
+            <select value={f.classe} onChange={up("classe")}>{CLASSES_IPMN.map(c=><option key={c.id}>{c.nom}</option>)}</select></div>}
+          <div className="fg"><label>Mot de passe</label><input type="password" placeholder="Min. 8 caractères" value={f.password} onChange={up("password")}/></div>
+          <button className="btn b-gold mt2" style={{width:"100%",justifyContent:"center",padding:"10px"}}
+            onClick={submit} disabled={loading}>{loading?"Création…":"Créer mon compte →"}</button>
+        </div>
+      )}
+    </div>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TABLEAU DE BORD
+   ══════════════════════════════════════════════════════════ */
+function Dashboard(){
+  const {students,absences,schoolInfo}=useApp();
+  const actifs=students.filter(s=>s.statut==="Actif").length;
+  const nj=absences.filter(a=>!a.justifie).length;
+  const {c1,c2}=getCycleStat(students);
+  // Comptabilité rapide
+  const totalDu=students.reduce((acc,s)=>{
+    const niv=getNiveau(s.classe)||"5ème";
+    const f=FRAIS_SCOLARITE[niv]||FRAIS_SCOLARITE["5ème"];
+    return acc+f.inscription+f.tranche1+f.tranche2+f.tranche3;
+  },0);
+  const totalPayé=students.reduce((acc,s)=>{
+    const niv=getNiveau(s.classe)||"5ème";
+    const f=FRAIS_SCOLARITE[niv]||FRAIS_SCOLARITE["5ème"];
+    const p=s.paiements||{};
+    let total=0;
+    if(p.inscription==="payé")total+=f.inscription;
+    if(p.tranche1==="payé")total+=f.tranche1;
+    if(p.tranche2==="payé")total+=f.tranche2;
+    if(p.tranche3==="payé")total+=f.tranche3;
+    return acc+total;
+  },0);
+  const debiteurs=students.filter(s=>s.paiements&&(s.paiements.tranche1!=="payé"||s.paiements.tranche2==="non")).length;
+
+  return <div>
+    <div style={{background:"var(--gdim)",border:"1px solid rgba(184,134,11,.2)",borderRadius:"var(--r)",
+      padding:"14px 18px",marginBottom:18,display:"flex",alignItems:"center",gap:12}}>
+      <span style={{fontSize:"1.6rem"}}>🏫</span>
+      <div>
+        <div style={{fontWeight:700,color:"var(--w)"}}>{schoolInfo.nom}</div>
+        <div className="sub" style={{fontSize:".72rem"}}>{schoolInfo.adresse} · {schoolInfo.email} · Proviseure : {schoolInfo.proviseure}</div>
+      </div>
+      <div style={{marginLeft:"auto",textAlign:"right"}}>
+        <div className="sub" style={{fontSize:".7rem"}}>Année scolaire</div>
+        <div style={{fontWeight:700,color:"var(--gold)"}}>{schoolInfo.annee}</div>
+      </div>
+    </div>
+
+    <div className="sg">
+      {[
+        {n:students.length,l:"Élèves inscrits",i:"🎒"},
+        {n:actifs,l:"Actifs",i:"✅"},
+        {n:c1,l:"1er Cycle",i:"📚"},
+        {n:c2,l:"2nd Cycle",i:"🎓"},
+        {n:PROFS_INIT.length,l:"Enseignants",i:"👨‍🏫"},
+        {n:nj,l:"Absences non justif.",i:"🔴"},
+        {n:debiteurs,l:"Élèves débiteurs",i:"💰"},
+        {n:fmtXAF(totalPayé),l:"Recettes perçues",i:"💵"},
+      ].map((s,i)=><div className="sc" key={i}><div className="sc-i">{s.i}</div><div className="sc-n" style={{fontSize:typeof s.n==="string"?"1rem":undefined}}>{s.n}</div><div className="sc-l">{s.l}</div></div>)}
+    </div>
+
+    <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:15,marginBottom:15}}>
+      <div className="card">
+        <div className="rowb mb3"><h3 style={{fontSize:"1rem"}}>Élèves récents</h3><span className="sub">{students.length} inscrits</span></div>
+        <div className="tw"><table><thead><tr><th>Matricule</th><th>Élève</th><th>Classe</th><th>Moy.</th><th>Paiement</th></tr></thead>
+        <tbody>{students.slice(0,5).map(s=>{
+          const moy=calcMoyNote(s.notes||{});
+          const p=s.paiements||{};
+          const ok=p.tranche1==="payé"&&p.tranche2==="payé";
+          return <tr key={s.id}>
+            <td><span className="tag">{s.matricule}</span></td>
+            <td><div className="row g2"><Av prenom={s.prenom||s.nom} nom={s.nom} size={27}/>
+              <div style={{marginLeft:7}}><div style={{fontWeight:500,fontSize:".8rem"}}>{s.prenom?`${s.prenom} ${s.nom}`:s.nom}</div>
+              <div className="sub" style={{fontSize:".68rem"}}>{s.email}</div></div></div></td>
+            <td className="sub">{s.classe}</td>
+            <td><span style={{fontWeight:700,color:nc(moy),fontSize:".85rem"}}>{moy}/20</span></td>
+            <td><span className={`chip ${ok?"c-ok":"c-warn"}`}>{ok?"À jour":"En retard"}</span></td>
+          </tr>;
+        })}</tbody></table></div>
+      </div>
+
+      <div className="card">
+        <h3 style={{fontSize:"1rem",marginBottom:13}}>💰 Situation financière</h3>
+        {[
+          {l:"Total attendu",v:fmtXAF(totalDu),c:"var(--tx)"},
+          {l:"Total perçu",v:fmtXAF(totalPayé),c:"var(--ok)"},
+          {l:"Reste à recouvrer",v:fmtXAF(totalDu-totalPayé),c:"var(--err)"},
+          {l:"Taux de recouvrement",v:`${totalDu?Math.round((totalPayé/totalDu)*100):0}%`,c:"var(--gold)"},
+        ].map(r=><div key={r.l} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+          padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+          <span className="sub" style={{fontSize:".78rem"}}>{r.l}</span>
+          <span style={{fontWeight:700,color:r.c,fontSize:".88rem"}}>{r.v}</span>
+        </div>)}
+        <div className="pb mt2"><div className="pf" style={{width:`${totalDu?Math.round((totalPayé/totalDu)*100):0}%`}}/></div>
+      </div>
+    </div>
+
+    <div className="card">
+      <h3 style={{fontSize:"1rem",marginBottom:13}}>📣 Annonces récentes</h3>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
+        {ANNONCES_INIT.map(a=><div className="ci" key={a.id} style={{borderLeft:"3px solid var(--gold)"}}>
+          <div style={{fontWeight:600,fontSize:".84rem",marginBottom:3}}>{a.titre}</div>
+          <div className="sub" style={{fontSize:".68rem",marginBottom:6}}>{a.date} · {a.cible}</div>
+          <span className={`chip ${a.type==="Examen"?"c-err":a.type==="Bulletin"?"c-ok":"c-gold"}`}>{a.type}</span>
+        </div>)}
+      </div>
+    </div>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ÉLÈVES
+   ══════════════════════════════════════════════════════════ */
+function Eleves(){
+  const {students,setStudents,toast}=useApp();
+  const [search,setSearch]=useState("");
+  const [fC,setFC]=useState("");
+  const [fN,setFN]=useState("");
+  const [fS,setFS]=useState("");
+  const [modal,setModal]=useState(null);
+  const [detail,setDetail]=useState(null);
+  const [f,setF]=useState({});
+  const up=k=>e=>setF(p=>({...p,[k]:e.target.value}));
+
+  const list=students.filter(s=>{
+    const nom=`${s.prenom||""} ${s.nom} ${s.email} ${s.matricule}`.toLowerCase();
+    return nom.includes(search.toLowerCase())&&(!fC||s.classe===fC)&&(!fN||getNiveau(s.classe)===fN)&&(!fS||s.statut===fS);
+  });
+
+  const openAdd=()=>{
+    setF({nom:"",prenom:"",email:"",tel:"",ddn:"",genre:"M",classe:"5ème A",statut:"Actif",responsable:"",tel_resp:"",matricule:""});
+    setModal("add");
+  };
+  const openEdit=s=>{setF({...s});setModal(s);};
+
+  const save=()=>{
+    if(!f.nom||!f.email){toast("Nom et email obligatoires","error");return;}
+    if(modal==="add"){
+      const id=`IPMN24-${String(Date.now()).slice(-5)}`;
+      const mat=f.matricule||id;
+      const emptyNotes={};Object.keys(MATIERES_APC).forEach(m=>emptyNotes[m]={p1:0,rp1:0,p2:0,dm:0});
+      setStudents(p=>[...p,{...f,id,matricule:mat,di:new Date().toISOString().split("T")[0],
+        notes:emptyNotes,paiements:{inscription:"non",tranche1:"non",tranche2:"non",tranche3:"non"}}]);
+      toast("Élève inscrit avec succès","success");
+    } else {
+      setStudents(p=>p.map(s=>s.id===modal.id?{...s,...f}:s));
+      toast("Élève modifié","success");
+    }
+    setModal(null);
+  };
+  const del=id=>{if(confirm("Supprimer cet élève ?")){{setStudents(p=>p.filter(s=>s.id!==id));toast("Supprimé","warn");}}};
+
+  const niveaux=[...new Set(CLASSES_IPMN.map(c=>c.niveau))];
+  const cycles=[...new Set(CLASSES_IPMN.map(c=>c.cycle))];
+
+  return <div>
+    <div className="rowb mb3">
+      <div><h2 style={{fontSize:"1.15rem"}}>Gestion des élèves</h2>
+        <div className="sub">{list.length} / {students.length} élève(s)</div></div>
+      <button className="btn b-gold" onClick={openAdd}>+ Inscrire un élève</button>
+    </div>
+
+    <div className="card mb3" style={{padding:"11px 15px"}}>
+      <div className="row g2" style={{flexWrap:"wrap"}}>
+        <input style={{width:210}} placeholder="🔍 Nom, matricule, email…" value={search} onChange={e=>setSearch(e.target.value)}/>
+        <select style={{width:135}} value={fN} onChange={e=>setFN(e.target.value)}>
+          <option value="">Tous niveaux</option>{niveaux.map(n=><option key={n}>{n}</option>)}</select>
+        <select style={{width:155}} value={fC} onChange={e=>setFC(e.target.value)}>
+          <option value="">Toutes classes</option>{CLASSES_IPMN.map(c=><option key={c.id}>{c.nom}</option>)}</select>
+        <select style={{width:135}} value={fS} onChange={e=>setFS(e.target.value)}>
+          <option value="">Tous statuts</option><option>Actif</option><option>Suspendu</option><option>Diplômé</option><option>En attente de validation</option></select>
+        <button className="btn b-ghost b-sm" onClick={()=>{setSearch("");setFC("");setFN("");setFS("");}}>✕ Réinitialiser</button>
+      </div>
+    </div>
+
+    <div className="tw">
+      <table><thead><tr><th>Matricule</th><th>Élève</th><th>Classe</th><th>Niveau</th><th>Moy. gén.</th><th>T1</th><th>T2</th><th>Paiement</th><th>Statut</th><th>Actions</th></tr></thead>
+      <tbody>
+        {list.length===0?<tr><td colSpan={10}><div className="empty"><div className="ei">🔍</div>Aucun élève trouvé</div></td></tr>:
+        list.map(s=>{
+          const moy=calcMoyNote(s.notes||{});
+          const p=s.paiements||{};
+          return <tr key={s.id}>
+            <td><span className="tag" style={{fontSize:".6rem"}}>{s.matricule}</span></td>
+            <td><div className="row g2"><Av prenom={s.prenom||s.nom} nom={s.nom} size={28}/>
+              <div style={{marginLeft:7}}>
+                <div style={{fontWeight:500,fontSize:".81rem"}}>{s.prenom?`${s.prenom} ${s.nom}`:s.nom}</div>
+                <div className="sub" style={{fontSize:".68rem"}}>{s.email}</div>
+              </div></div></td>
+            <td style={{fontSize:".81rem"}}>{s.classe}</td>
+            <td><span className="chip c-info">{getNiveau(s.classe)}</span></td>
+            <td><span style={{fontWeight:700,color:nc(moy)}}>{moy}/20</span></td>
+            <td><span className={`chip ${paiChip(p.tranche1)}`} style={{fontSize:".6rem"}}>{p.tranche1==="payé"?"✓":"✗"}</span></td>
+            <td><span className={`chip ${paiChip(p.tranche2)}`} style={{fontSize:".6rem"}}>{p.tranche2==="payé"?"✓":p.tranche2==="partiel"?"~":"✗"}</span></td>
+            <td><span className={`chip ${p.inscription==="payé"&&p.tranche1==="payé"?"c-ok":"c-warn"}`} style={{fontSize:".63rem"}}>
+              {p.inscription==="payé"&&p.tranche1==="payé"?"À jour":"En retard"}</span></td>
+            <td><span className={`chip ${sc_chip(s.statut)}`}>{s.statut}</span></td>
+            <td><div className="row g1">
+              <button className="btn b-info b-xs" onClick={()=>setDetail(s)}>👁️</button>
+              <button className="btn b-out b-xs" onClick={()=>openEdit(s)}>✏️</button>
+              <button className="btn b-err b-xs" onClick={()=>del(s.id)}>🗑️</button>
+            </div></td>
+          </tr>;
+        })}
+      </tbody></table>
+    </div>
+
+    {/* Modal ajout/edit */}
+    {modal&&<Modal title={modal==="add"?"➕ Inscrire un élève":"✏️ Modifier l'élève"} onClose={()=>setModal(null)} large>
+      <div className="fg2" style={{gap:11}}>
+        <div className="fg"><label>Nom *</label><input value={f.nom||""} onChange={up("nom")}/></div>
+        <div className="fg"><label>Prénom</label><input value={f.prenom||""} onChange={up("prenom")}/></div>
+        <div className="fg full"><label>Email *</label><input type="email" value={f.email||""} onChange={up("email")}/></div>
+        <div className="fg"><label>Matricule</label><input value={f.matricule||""} onChange={up("matricule")} placeholder="Auto-généré si vide"/></div>
+        <div className="fg"><label>Téléphone</label><input value={f.tel||""} onChange={up("tel")}/></div>
+        <div className="fg"><label>Date de naissance</label><input type="date" value={f.ddn||""} onChange={up("ddn")}/></div>
+        <div className="fg"><label>Genre</label><select value={f.genre||"M"} onChange={up("genre")}><option value="M">Masculin</option><option value="F">Féminin</option></select></div>
+        <div className="fg"><label>Classe</label><select value={f.classe||"5ème A"} onChange={up("classe")}>{CLASSES_IPMN.map(c=><option key={c.id}>{c.nom}</option>)}</select></div>
+        <div className="fg"><label>Statut</label><select value={f.statut||"Actif"} onChange={up("statut")}><option>Actif</option><option>Suspendu</option><option>Diplômé</option><option>En attente de validation</option></select></div>
+        <div className="fg"><label>Responsable légal</label><input value={f.responsable||""} onChange={up("responsable")}/></div>
+        <div className="fg"><label>Tél. responsable</label><input value={f.tel_resp||""} onChange={up("tel_resp")}/></div>
+      </div>
+      <div className="row g2 mt3" style={{justifyContent:"flex-end"}}>
+        <button className="btn b-ghost" onClick={()=>setModal(null)}>Annuler</button>
+        <button className="btn b-gold" onClick={save}>{modal==="add"?"Inscrire":"Enregistrer"}</button>
+      </div>
+    </Modal>}
+
+    {/* Modal détail élève */}
+    {detail&&<Modal title={`Dossier — ${detail.prenom||""} ${detail.nom}`} onClose={()=>setDetail(null)} large>
+      <div className="row g3 mb3">
+        <Av prenom={detail.prenom||detail.nom} nom={detail.nom} size={56}/>
+        <div>
+          <div style={{fontWeight:700,fontSize:"1.1rem",color:"var(--w)"}}>{detail.prenom} {detail.nom}</div>
+          <div className="sub">{detail.matricule} · {detail.classe} · Né(e) le {detail.ddn||"—"}</div>
+          <div className="row g2 mt1">
+            <span className={`chip ${sc_chip(detail.statut)}`}>{detail.statut}</span>
+            <span className="chip c-info">{getNiveau(detail.classe)}</span>
+          </div>
+        </div>
+        <div style={{marginLeft:"auto",textAlign:"center",padding:"10px 18px",background:"var(--s2)",borderRadius:"var(--r)"}}>
+          <div style={{fontSize:"1.9rem",fontWeight:700,color:nc(calcMoyNote(detail.notes||{}))}}>{calcMoyNote(detail.notes||{})}</div>
+          <div className="sub" style={{fontSize:".7rem"}}>/20 Moy. générale</div>
+        </div>
+      </div>
+      <div className="sep"/>
+      <h4 style={{fontSize:".88rem",marginBottom:10}}>📊 Notes par matière (Paliers APC)</h4>
+      <div style={{overflowX:"auto"}}>
+        <table style={{fontSize:".75rem"}}><thead><tr><th>Matière</th><th>Coeff.</th><th>Palier 1</th><th>Ratt. P1</th><th>Palier 2</th><th>DM</th><th>Moy.</th></tr></thead>
+        <tbody>{Object.entries(detail.notes||{}).map(([m,n])=>{
+          const coeff=(MATIERES_APC[m]||{coeff:1}).coeff;
+          const best=Math.max(n.p1||0,n.rp1||0);
+          const vals=[best,n.p2,n.dm].filter(x=>x>0);
+          const moy=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):"-";
+          return <tr key={m}>
+            <td><span style={{color:MATIERES_APC[m]?.color||"var(--gold)",fontWeight:600}}>{m}</span></td>
+            <td style={{textAlign:"center"}}>{coeff}</td>
+            <td style={{textAlign:"center",color:nc(n.p1||0)}}>{n.p1||"-"}</td>
+            <td style={{textAlign:"center",color:nc(n.rp1||0)}}>{n.rp1||"-"}</td>
+            <td style={{textAlign:"center",color:nc(n.p2||0)}}>{n.p2||"-"}</td>
+            <td style={{textAlign:"center",color:nc(n.dm||0)}}>{n.dm||"-"}</td>
+            <td style={{textAlign:"center",fontWeight:700,color:nc(moy)}}>{moy}/20</td>
+          </tr>;
+        })}</tbody></table>
+      </div>
+      <div className="sep"/>
+      <h4 style={{fontSize:".88rem",marginBottom:10}}>💰 Paiements</h4>
+      <div className="fg2">
+        {["inscription","tranche1","tranche2","tranche3"].map(k=>{
+          const niv=getNiveau(detail.classe)||"5ème";
+          const frais=FRAIS_SCOLARITE[niv]||FRAIS_SCOLARITE["5ème"];
+          const labels={inscription:"Inscription",tranche1:"1ère tranche",tranche2:"2ème tranche",tranche3:"3ème tranche"};
+          const montants={inscription:frais.inscription,tranche1:frais.tranche1,tranche2:frais.tranche2,tranche3:frais.tranche3};
+          return <div className="ci" key={k} style={{borderLeft:`3px solid ${detail.paiements?.[k]==="payé"?"var(--ok)":detail.paiements?.[k]==="partiel"?"var(--warn)":"var(--err)"}`}}>
+            <div style={{fontWeight:600,fontSize:".8rem"}}>{labels[k]}</div>
+            <div className="sub" style={{fontSize:".7rem"}}>{fmtXAF(montants[k])}</div>
+            <span className={`chip mt1 ${paiChip(detail.paiements?.[k]||"non")}`}>{paiLabel(detail.paiements?.[k]||"non")}</span>
+          </div>;
+        })}
+      </div>
+      <div className="row g2 mt3" style={{justifyContent:"flex-end"}}>
+        <button className="btn b-out b-sm" onClick={()=>{openEdit(detail);setDetail(null);}}>✏️ Modifier le dossier</button>
+        <button className="btn b-ghost b-sm" onClick={()=>setDetail(null)}>Fermer</button>
+      </div>
+    </Modal>}
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   NOTES APC
+   ══════════════════════════════════════════════════════════ */
+function Notes(){
+  const {students,setStudents,toast}=useApp();
+  const [classe,setClasse]=useState("5ème A");
+  const [matiere,setMatiere]=useState("Mathématiques");
+  const [editing,setEditing]=useState(null);
+  const [val,setVal]=useState("");
+
+  const elv=students.filter(s=>s.classe===classe);
+  const paliers=["p1","rp1","p2","dm"];
+  const palierLabels={p1:"Palier 1",rp1:"Ratt. P1",p2:"Palier 2",dm:"Devoir Maison"};
+
+  const startEdit=(sid,pal,cur)=>{setEditing({sid,pal});setVal(String(cur||""));};
+  const commit=()=>{
+    if(!editing)return;
+    const n=val===""?0:parseFloat(val);
+    if(isNaN(n)||n<0||n>20){toast("Note invalide (0-20)","error");setEditing(null);return;}
+    setStudents(p=>p.map(s=>{
+      if(s.id!==editing.sid)return s;
+      const nn={...s.notes};nn[matiere]={...nn[matiere],[editing.pal]:n};
+      return {...s,notes:nn};
+    }));
+    setEditing(null);toast("Note enregistrée ✓","success");
+  };
+
+  const moyClasse=(pal)=>{
+    const vals=elv.map(s=>s.notes?.[matiere]?.[pal]||0).filter(x=>x>0);
+    return vals.length?avg(vals):"-";
+  };
+
+  return <div>
+    <div className="rowb mb3">
+      <div><h2 style={{fontSize:"1.15rem"}}>Notes APC — Paliers</h2>
+        <div className="sub">Cliquez sur une note pour la modifier</div></div>
+      <div className="row g2">
+        <select style={{width:150}} value={classe} onChange={e=>setClasse(e.target.value)}>
+          {CLASSES_IPMN.map(c=><option key={c.id}>{c.nom}</option>)}</select>
+        <select style={{width:180}} value={matiere} onChange={e=>setMatiere(e.target.value)}>
+          {Object.keys(MATIERES_APC).map(m=><option key={m}>{m}</option>)}</select>
+      </div>
+    </div>
+
+    {/* Stats paliers */}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:16}}>
+      {paliers.map(p=><div className="sc" key={p}>
+        <div className="sc-n">{moyClasse(p)}</div>
+        <div className="sc-l">Moy. {palierLabels[p]}</div>
+      </div>)}
+    </div>
+
+    {/* Info matière */}
+    <div className="ci mb3" style={{borderLeft:`3px solid ${MATIERES_APC[matiere]?.color||"var(--gold)"}`}}>
+      <div className="row g3">
+        <div style={{width:10,height:10,borderRadius:"50%",background:MATIERES_APC[matiere]?.color||"var(--gold)",flexShrink:0}}/>
+        <span style={{fontWeight:600}}>{matiere}</span>
+        <span className="sub">· Coefficient : {MATIERES_APC[matiere]?.coeff}</span>
+        <span className="sub">· {elv.length} élèves · Classe : {classe}</span>
+        <span className="sub" style={{marginLeft:"auto",fontSize:".7rem"}}>💡 Système APC : max(P1, Ratt.P1) + P2 + DM</span>
+      </div>
+    </div>
+
+    <div className="tw">
+      <table><thead><tr><th>#</th><th>Élève</th>
+        {paliers.map(p=><th key={p} style={{textAlign:"center"}}>{palierLabels[p]}/20</th>)}
+        <th style={{textAlign:"center"}}>Moy./20</th></tr></thead>
+      <tbody>
+        {elv.length===0?<tr><td colSpan={7}><div className="empty"><div className="ei">📊</div>Aucun élève dans cette classe</div></td></tr>:
+        elv.map((s,i)=>{
+          const n=s.notes?.[matiere]||{p1:0,rp1:0,p2:0,dm:0};
+          const best=Math.max(n.p1||0,n.rp1||0);
+          const vals=[best,n.p2,n.dm].filter(x=>x>0);
+          const moy=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):"-";
+          return <tr key={s.id}>
+            <td className="sub" style={{fontSize:".72rem"}}>{i+1}</td>
+            <td><div className="row g2"><Av prenom={s.prenom||s.nom} nom={s.nom} size={26}/>
+              <span style={{marginLeft:7,fontWeight:500,fontSize:".81rem"}}>{s.prenom?`${s.prenom} ${s.nom}`:s.nom}</span></div></td>
+            {paliers.map(pal=>(
+              <td key={pal} style={{textAlign:"center"}}>
+                {editing?.sid===s.id&&editing.pal===pal
+                  ?<input style={{width:44,padding:"2px 4px",textAlign:"center",fontSize:".76rem"}}
+                    value={val} onChange={e=>setVal(e.target.value)}
+                    onBlur={commit} onKeyDown={e=>e.key==="Enter"&&commit()} autoFocus/>
+                  :<span onClick={()=>startEdit(s.id,pal,n[pal])}
+                    style={{fontWeight:600,fontSize:".82rem",color:n[pal]>0?nc(n[pal]):"var(--sub)",
+                      cursor:"pointer",background:"rgba(255,255,255,.04)",padding:"2px 7px",borderRadius:3,
+                      display:"inline-block"}}>{n[pal]||"—"}</span>}
+              </td>))}
+            <td style={{textAlign:"center"}}>
+              <span style={{fontWeight:700,fontSize:".9rem",color:nc(parseFloat(moy))}}>{moy}/20</span></td>
+          </tr>;
+        })}
+      </tbody></table>
+    </div>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   CONSEIL DE CLASSE / PLANCHE SS
+   ══════════════════════════════════════════════════════════ */
+function ConseilClasse(){
+  const {students}=useApp();
+  const [classe,setClasse]=useState("5ème A");
+  const [trim,setTrim]=useState("1er Trimestre");
+  const [showPlanche,setShowPlanche]=useState(false);
+
+  const elv=students.filter(s=>s.classe===classe)
+    .map(s=>({...s,moy:parseFloat(calcMoyNote(s.notes||{}))||0}))
+    .sort((a,b)=>b.moy-a.moy);
+
+  const mention=m=>m>=16?"Très Bien":m>=14?"Bien":m>=12?"Assez Bien":m>=10?"Passable":"Insuffisant";
+  const mentionColor=m=>m>=16?"var(--ok)":m>=14?"var(--ok)":m>=12?"var(--warn)":m>=10?"var(--gold)":"var(--err)";
+  const total=elv.length;
+  const admis=elv.filter(e=>e.moy>=10).length;
+  const tauxRéussite=total?Math.round((admis/total)*100):0;
+  const moyClasse=elv.length?avg(elv.map(e=>e.moy)):"-";
+
+  return <div>
+    <div className="rowb mb3">
+      <div><h2 style={{fontSize:"1.15rem"}}>Conseil de classe & Planche SS</h2>
+        <div className="sub">Classement et résultats par classe</div></div>
+      <div className="row g2">
+        <select style={{width:130}} value={trim} onChange={e=>setTrim(e.target.value)}>
+          <option>1er Trimestre</option><option>2ème Trimestre</option><option>3ème Trimestre</option></select>
+        <select style={{width:150}} value={classe} onChange={e=>setClasse(e.target.value)}>
+          {CLASSES_IPMN.map(c=><option key={c.id}>{c.nom}</option>)}</select>
+        <button className="btn b-gold" onClick={()=>setShowPlanche(true)}>📋 Planche SS</button>
+      </div>
+    </div>
+
+    {/* Statistiques */}
+    <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10,marginBottom:16}}>
+      {[
+        {n:total,l:"Élèves",i:"🎒"},
+        {n:admis,l:"Admis (≥10)",i:"✅"},
+        {n:total-admis,l:"Non admis",i:"❌"},
+        {n:`${tauxRéussite}%`,l:"Taux réussite",i:"📊"},
+        {n:moyClasse,l:"Moyenne classe",i:"📈"},
+      ].map((s,i)=><div className="sc" key={i}><div className="sc-i">{s.i}</div><div className="sc-n">{s.n}</div><div className="sc-l">{s.l}</div></div>)}
+    </div>
+
+    {/* Répartition mentions */}
+    <div className="card mb3">
+      <h3 style={{fontSize:".95rem",marginBottom:12}}>Répartition des mentions</h3>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:8}}>
+        {[{l:"Très Bien",min:16,color:"#22c55e"},{l:"Bien",min:14,color:"#86efac"},{l:"Assez Bien",min:12,color:"#f59e0b"},{l:"Passable",min:10,color:"#fbbf24"},{l:"Insuffisant",min:0,color:"#ef4444"}].map(m=>{
+          const cnt=elv.filter(e=>m.min===0?e.moy<10:e.moy>=m.min&&(m.min===16||e.moy<m.min+2)).length;
+          const pct=total?Math.round((cnt/total)*100):0;
+          return <div className="ci" key={m.l} style={{textAlign:"center",borderTop:`3px solid ${m.color}`}}>
+            <div style={{fontWeight:700,fontSize:"1.5rem",color:m.color}}>{cnt}</div>
+            <div style={{fontSize:".72rem",fontWeight:600,color:m.color}}>{m.l}</div>
+            <div className="sub" style={{fontSize:".68rem"}}>{pct}%</div>
+          </div>;
+        })}
+      </div>
+    </div>
+
+    {/* Classement */}
+    <div className="tw">
+      <table><thead><tr><th>Rang</th><th>Élève</th><th>Moy. gén.</th><th>Mention</th><th>Décision</th><th>Appréciation</th></tr></thead>
+      <tbody>
+        {elv.length===0?<tr><td colSpan={6}><div className="empty"><div className="ei">📊</div>Aucun élève</div></td></tr>:
+        elv.map((s,i)=><tr key={s.id}>
+          <td><span style={{fontWeight:700,color:i<3?"var(--gold)":"var(--sub)",fontSize:i<3?"1rem":".82rem"}}>
+            {i<3?["🥇","🥈","🥉"][i]:i+1}</span></td>
+          <td><div className="row g2"><Av prenom={s.prenom||s.nom} nom={s.nom} size={26}/>
+            <span style={{marginLeft:7,fontWeight:500,fontSize:".81rem"}}>{s.prenom?`${s.prenom} ${s.nom}`:s.nom}</span></div></td>
+          <td><span style={{fontWeight:700,fontSize:"1rem",color:mentionColor(s.moy)}}>{s.moy.toFixed(2)}/20</span></td>
+          <td><span className="chip" style={{background:`${mentionColor(s.moy)}22`,color:mentionColor(s.moy)}}>{mention(s.moy)}</span></td>
+          <td><span className={`chip ${s.moy>=10?"c-ok":"c-err"}`}>{s.moy>=10?"Admis(e)":"Non admis(e)"}</span></td>
+          <td><span className="sub" style={{fontSize:".76rem"}}>{s.moy>=16?"Excellent travail. Félicitations.":s.moy>=14?"Très bon trimestre. Encouragements.":s.moy>=12?"Bon travail. Continuer les efforts.":s.moy>=10?"Résultats satisfaisants. Peut mieux faire.":"Résultats insuffisants. Travail à améliorer."}</span></td>
+        </tr>)}
+      </tbody></table>
+    </div>
+
+    {/* PLANCHE SS */}
+    {showPlanche&&<div className="ov" onClick={()=>setShowPlanche(false)}>
+      <div className="modal modal-lg" onClick={e=>e.stopPropagation()} style={{maxWidth:880}}>
+        <div className="rowb mb3">
+          <h3>📋 Planche — Conseil de Classe · {classe} · {trim}</h3>
+          <div className="row g2">
+            <button className="btn b-gold b-sm" onClick={()=>window.print()}>🖨️ Imprimer</button>
+            <button className="btn b-ghost b-ic" onClick={()=>setShowPlanche(false)}>✕</button>
+          </div>
+        </div>
+        {/* En-tête IPMN */}
+        <div style={{border:"2px solid var(--gold)",borderRadius:"var(--r)",padding:16,marginBottom:14}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",marginBottom:10}}>
+            <div style={{fontSize:".7rem",lineHeight:1.7}}>
+              <div style={{fontWeight:700}}>FONDATION ANTSELEVE OYIMA</div>
+              <div>INSTITUTION PRIVEE MARIE NDZABA</div>
+              <div className="sub">Tél : +241 066 89 79 79</div>
+            </div>
+            <div style={{textAlign:"center",padding:"0 14px"}}>
+              <div style={{fontSize:"1rem",fontWeight:700,color:"var(--gold)"}}>PLANCHE RECAPITULATIVE</div>
+              <div style={{fontSize:".78rem",fontWeight:600}}>CONSEIL DE CLASSE — {trim.toUpperCase()}</div>
+              <div style={{fontSize:".75rem",color:"var(--sub)"}}>Classe : {classe} · Effectif : {total}</div>
+            </div>
+            <div style={{fontSize:".7rem",lineHeight:1.7,textAlign:"right"}}>
+              <div>REPUBLIQUE GABONAISE</div>
+              <div style={{fontWeight:700}}>Union – Travail – Justice</div>
+              <div className="sub">Année {SCHOOL_INFO_DEFAULT.annee}</div>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:6,marginBottom:8}}>
+            {[{l:"Effectif",v:total},{l:"Admis",v:admis},{l:"Non admis",v:total-admis},{l:"Tx réussite",v:`${tauxRéussite}%`},{l:"Moy. classe",v:moyClasse+"/20"}].map(r=>
+              <div key={r.l} style={{background:"var(--gdim)",borderRadius:"var(--rs)",padding:"6px",textAlign:"center"}}>
+                <div style={{fontWeight:700,color:"var(--gold)",fontSize:".95rem"}}>{r.v}</div>
+                <div style={{fontSize:".64rem",color:"var(--sub)"}}>{r.l}</div>
+              </div>)}
+          </div>
+        </div>
+
+        {/* Tableau planche */}
+        <div style={{overflowX:"auto"}}>
+          <table style={{fontSize:".7rem"}}>
+            <thead><tr>
+              <th style={{width:30}}>Rang</th>
+              <th style={{minWidth:160}}>Nom et Prénom(s)</th>
+              {Object.keys(MATIERES_APC).slice(0,6).map(m=><th key={m} style={{textAlign:"center",fontSize:".58rem",color:MATIERES_APC[m].color}}>{m.slice(0,8)}</th>)}
+              <th style={{textAlign:"center"}}>Moy. /20</th>
+              <th style={{textAlign:"center"}}>Mention</th>
+              <th style={{textAlign:"center"}}>Décision</th>
+            </tr></thead>
+            <tbody>{elv.map((s,i)=>{
+              const mats=Object.keys(MATIERES_APC).slice(0,6);
+              return <tr key={s.id} style={{background:i%2===0?"transparent":"rgba(255,255,255,.015)"}}>
+                <td style={{textAlign:"center",fontWeight:700,color:i<3?"var(--gold)":"var(--sub)"}}>{i+1}</td>
+                <td style={{fontWeight:500}}>{s.prenom?`${s.nom} ${s.prenom}`:s.nom}</td>
+                {mats.map(m=>{
+                  const n=s.notes?.[m]||{};
+                  const best=Math.max(n.p1||0,n.rp1||0);
+                  const vals=[best,n.p2,n.dm].filter(x=>x>0);
+                  const moy=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):"-";
+                  return <td key={m} style={{textAlign:"center",fontWeight:600,color:nc(parseFloat(moy))}}>{moy}</td>;
+                })}
+                <td style={{textAlign:"center",fontWeight:700,color:mentionColor(s.moy)}}>{s.moy.toFixed(2)}</td>
+                <td style={{textAlign:"center"}}><span style={{color:mentionColor(s.moy),fontWeight:600,fontSize:".62rem"}}>{mention(s.moy)}</span></td>
+                <td style={{textAlign:"center"}}><span className={`chip ${s.moy>=10?"c-ok":"c-err"}`} style={{fontSize:".58rem"}}>{s.moy>=10?"Admis":"Non admis"}</span></td>
+              </tr>;
+            })}</tbody>
+          </table>
+        </div>
+        <div style={{marginTop:16,fontSize:".72rem",color:"var(--sub)",fontStyle:"italic",borderTop:"1px solid rgba(255,255,255,.06)",paddingTop:10}}>
+          Fait à Franceville, le {new Date().toLocaleDateString('fr-FR')} · Visa Proviseure : _________________
+        </div>
+      </div>
+    </div>}
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   COMPTABILITÉ
+   ══════════════════════════════════════════════════════════ */
+function Comptabilite(){
+  const {students,setStudents,toast}=useApp();
+  const [search,setSearch]=useState("");
+  const [fC,setFC]=useState("");
+  const [fPai,setFPai]=useState("");
+  const [editPai,setEditPai]=useState(null);
+  const [pForm,setPForm]=useState({});
+
+  const list=students.filter(s=>{
+    const q=`${s.prenom||""} ${s.nom} ${s.matricule}`.toLowerCase();
+    const p=s.paiements||{};
+    const enRetard=p.tranche1!=="payé"||p.tranche2!=="non"||p.inscription!=="payé";
+    return q.includes(search.toLowerCase())&&(!fC||s.classe===fC)&&
+      (fPai===""||
+       (fPai==="ok"&&p.inscription==="payé"&&p.tranche1==="payé"&&p.tranche2==="payé")||
+       (fPai==="retard"&&(p.tranche1!=="payé"||p.tranche2!=="partiel"))||
+       (fPai==="zero"&&p.inscription!=="payé"));
+  });
+
+  // Calculs globaux
+  const stats=students.reduce((acc,s)=>{
+    const niv=getNiveau(s.classe)||"5ème";
+    const f=FRAIS_SCOLARITE[niv]||FRAIS_SCOLARITE["5ème"];
+    const p=s.paiements||{};
+    acc.attendu+=f.inscription+f.tranche1+f.tranche2+f.tranche3;
+    if(p.inscription==="payé")acc.percu+=f.inscription;
+    if(p.tranche1==="payé")acc.percu+=f.tranche1;
+    if(p.tranche2==="payé")acc.percu+=f.tranche2;
+    if(p.tranche2==="partiel")acc.percu+=Math.round(f.tranche2/2);
+    if(p.tranche3==="payé")acc.percu+=f.tranche3;
+    return acc;
+  },{attendu:0,percu:0});
+  const restant=stats.attendu-stats.percu;
+  const taux=stats.attendu?Math.round((stats.percu/stats.attendu)*100):0;
+
+  const openEdit=s=>{setEditPai(s);setPForm({...(s.paiements||{})});};
+  const savePai=()=>{
+    setStudents(p=>p.map(s=>s.id===editPai.id?{...s,paiements:pForm}:s));
+    toast("Paiements mis à jour ✓","success");setEditPai(null);
+  };
+  const up=k=>e=>setPForm(p=>({...p,[k]:e.target.value}));
+
+  const getNivFrais=s=>FRAIS_SCOLARITE[getNiveau(s.classe)]||FRAIS_SCOLARITE["5ème"];
+  const totalEleve=s=>{
+    const f=getNivFrais(s);
+    const p=s.paiements||{};
+    let tot=0;
+    if(p.inscription==="payé")tot+=f.inscription;
+    if(p.tranche1==="payé")tot+=f.tranche1;
+    if(p.tranche2==="payé")tot+=f.tranche2;
+    if(p.tranche2==="partiel")tot+=Math.round(f.tranche2/2);
+    if(p.tranche3==="payé")tot+=f.tranche3;
+    return tot;
+  };
+  const duEleve=s=>{const f=getNivFrais(s);return f.inscription+f.tranche1+f.tranche2+f.tranche3;};
+
+  return <div>
+    <div className="rowb mb3">
+      <div><h2 style={{fontSize:"1.15rem"}}>Comptabilité Scolaire</h2>
+        <div className="sub">Suivi des frais de scolarité — {list.length} élève(s)</div></div>
+      <button className="btn b-gold" onClick={()=>toast("Export Excel — Module en développement","info")}>⬇️ Exporter</button>
+    </div>
+
+    {/* Stats financières */}
+    <div className="sg mb3">
+      {[
+        {n:fmtXAF(stats.attendu),l:"Total attendu",i:"💼"},
+        {n:fmtXAF(stats.percu),l:"Total perçu",i:"✅"},
+        {n:fmtXAF(restant),l:"Reste à recouvrer",i:"⏳"},
+        {n:`${taux}%`,l:"Taux recouvrement",i:"📊"},
+        {n:students.filter(s=>!s.paiements||s.paiements.tranche1!=="payé").length,l:"Débiteurs T1",i:"🔴"},
+        {n:students.filter(s=>s.paiements?.inscription==="payé"&&s.paiements?.tranche1==="payé"&&s.paiements?.tranche2==="payé").length,l:"À jour complets",i:"💚"},
+      ].map((s,i)=><div className="sc" key={i}><div className="sc-i">{s.i}</div>
+        <div className="sc-n" style={{fontSize:typeof s.n==="string"&&s.n.length>8?"1rem":undefined}}>{s.n}</div>
+        <div className="sc-l">{s.l}</div></div>)}
+    </div>
+
+    <div className="pb mb3" style={{height:8}}>
+      <div className="pf" style={{width:`${taux}%`}}/>
+    </div>
+
+    {/* Grille tarifaire */}
+    <div className="card mb3">
+      <h3 style={{fontSize:".95rem",marginBottom:12}}>📋 Grille tarifaire par niveau</h3>
+      <div style={{overflowX:"auto"}}>
+        <table style={{fontSize:".78rem"}}><thead><tr><th>Niveau</th><th>Inscription</th><th>1ère Tranche</th><th>2ème Tranche</th><th>3ème Tranche</th><th>Total annuel</th></tr></thead>
+        <tbody>{Object.entries(FRAIS_SCOLARITE).map(([niv,f])=><tr key={niv}>
+          <td><span className="chip c-info">{niv}</span></td>
+          <td style={{fontWeight:600}}>{fmtXAF(f.inscription)}</td>
+          <td style={{fontWeight:600}}>{fmtXAF(f.tranche1)}</td>
+          <td style={{fontWeight:600}}>{fmtXAF(f.tranche2)}</td>
+          <td style={{fontWeight:600}}>{fmtXAF(f.tranche3)}</td>
+          <td style={{fontWeight:700,color:"var(--gold)"}}>{fmtXAF(f.inscription+f.tranche1+f.tranche2+f.tranche3)}</td>
+        </tr>)}</tbody></table>
+      </div>
+    </div>
+
+    {/* Filtres */}
+    <div className="card mb3" style={{padding:"10px 14px"}}>
+      <div className="row g2" style={{flexWrap:"wrap"}}>
+        <input style={{width:200}} placeholder="🔍 Nom, matricule…" value={search} onChange={e=>setSearch(e.target.value)}/>
+        <select style={{width:140}} value={fC} onChange={e=>setFC(e.target.value)}>
+          <option value="">Toutes classes</option>{CLASSES_IPMN.map(c=><option key={c.id}>{c.nom}</option>)}</select>
+        <select style={{width:160}} value={fPai} onChange={e=>setFPai(e.target.value)}>
+          <option value="">Tous états</option>
+          <option value="ok">À jour (tout payé)</option>
+          <option value="retard">En retard</option>
+          <option value="zero">Aucun paiement</option>
+        </select>
+        <button className="btn b-ghost b-sm" onClick={()=>{setSearch("");setFC("");setFPai("");}}>✕</button>
+      </div>
+    </div>
+
+    {/* Tableau des paiements */}
+    <div className="tw">
+      <table><thead><tr><th>Matricule</th><th>Élève</th><th>Classe</th><th>Inscript.</th><th>T1</th><th>T2</th><th>T3</th><th>Perçu</th><th>Reste</th><th>Actions</th></tr></thead>
+      <tbody>
+        {list.length===0?<tr><td colSpan={10}><div className="empty"><div className="ei">💰</div>Aucun résultat</div></td></tr>:
+        list.map(s=>{
+          const p=s.paiements||{};
+          const perc=totalEleve(s);
+          const du=duEleve(s);
+          const reste=du-perc;
+          return <tr key={s.id}>
+            <td><span className="tag" style={{fontSize:".6rem"}}>{s.matricule}</span></td>
+            <td><div className="row g2"><Av prenom={s.prenom||s.nom} nom={s.nom} size={26}/>
+              <span style={{marginLeft:7,fontWeight:500,fontSize:".8rem"}}>{s.prenom?`${s.prenom} ${s.nom}`:s.nom}</span></div></td>
+            <td className="sub">{s.classe}</td>
+            {["inscription","tranche1","tranche2","tranche3"].map(k=>
+              <td key={k} style={{textAlign:"center"}}>
+                <span className={`chip ${paiChip(p[k]||"non")}`} style={{fontSize:".6rem"}}>
+                  {p[k]==="payé"?"✓":p[k]==="partiel"?"~":"✗"}
+                </span></td>)}
+            <td style={{fontWeight:700,color:"var(--ok)",fontSize:".82rem"}}>{fmtXAF(perc)}</td>
+            <td style={{fontWeight:700,color:reste>0?"var(--err)":"var(--ok)",fontSize:".82rem"}}>{reste>0?fmtXAF(reste):"—"}</td>
+            <td><button className="btn b-out b-xs" onClick={()=>openEdit(s)}>✏️</button></td>
+          </tr>;
+        })}
+      </tbody></table>
+    </div>
+
+    {/* Modal édition paiements */}
+    {editPai&&<Modal title={`💰 Paiements — ${editPai.prenom||""} ${editPai.nom}`} onClose={()=>setEditPai(null)}>
+      <div className="info-box mb3">
+        Niveau : <strong>{getNiveau(editPai.classe)}</strong> · Classe : <strong>{editPai.classe}</strong> · Matricule : <strong>{editPai.matricule}</strong>
+      </div>
+      {(()=>{
+        const f=getNivFrais(editPai);
+        return <div style={{display:"flex",flexDirection:"column",gap:11}}>
+          {[
+            {k:"inscription",l:"Inscription",m:f.inscription},
+            {k:"tranche1",l:"1ère Tranche",m:f.tranche1},
+            {k:"tranche2",l:"2ème Tranche",m:f.tranche2},
+            {k:"tranche3",l:"3ème Tranche",m:f.tranche3},
+          ].map(item=><div key={item.k} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",
+            background:"var(--s2)",borderRadius:"var(--rs)",border:"1px solid rgba(255,255,255,.05)"}}>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:".84rem"}}>{item.l}</div>
+              <div className="sub" style={{fontSize:".72rem"}}>{fmtXAF(item.m)}</div>
+            </div>
+            <select value={pForm[item.k]||"non"} onChange={up(item.k)} style={{width:140}}>
+              <option value="non">✗ Non payé</option>
+              <option value="partiel">~ Paiement partiel</option>
+              <option value="payé">✓ Payé intégralement</option>
+            </select>
+          </div>)}
+        </div>;
+      })()}
+      <div className="sep"/>
+      <div className="ci">
+        <div className="rowb">
+          <span style={{fontWeight:600}}>Total perçu après enregistrement</span>
+          <span style={{fontWeight:700,color:"var(--ok)"}}>
+            {fmtXAF(["inscription","tranche1","tranche2","tranche3"].reduce((acc,k)=>{
+              const f=getNivFrais(editPai);
+              const montants={inscription:f.inscription,tranche1:f.tranche1,tranche2:f.tranche2,tranche3:f.tranche3};
+              return acc+(pForm[k]==="payé"?montants[k]:pForm[k]==="partiel"?Math.round(montants[k]/2):0);
+            },0))}
+          </span>
+        </div>
+      </div>
+      <div className="row g2 mt3" style={{justifyContent:"flex-end"}}>
+        <button className="btn b-ghost" onClick={()=>setEditPai(null)}>Annuler</button>
+        <button className="btn b-gold" onClick={savePai}>Enregistrer les paiements</button>
+      </div>
+    </Modal>}
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ABSENCES
+   ══════════════════════════════════════════════════════════ */
+function Absences(){
+  const {students,absences,setAbsences,toast}=useApp();
+  const [modal,setModal]=useState(false);
+  const [f,setF]=useState({eleve:STUDENTS_INIT[0]?.id||"",date:"",heure:"7h30",motif:"",type:"Absence",justifie:false});
+  const up=k=>e=>setF(p=>({...p,[k]:e.target.type==="checkbox"?e.target.checked:e.target.value}));
+  const add=()=>{setAbsences(p=>[...p,{...f,id:`AB${Date.now()}`}]);toast("Signalement enregistré","success");setModal(false);};
+  const toggle=id=>setAbsences(p=>p.map(a=>a.id===id?{...a,justifie:!a.justifie}:a));
+  const del=id=>{setAbsences(p=>p.filter(a=>a.id!==id));toast("Supprimé","warn");};
+  const findSt=id=>students.find(s=>s.id===id);
+  const nj=absences.filter(a=>!a.justifie).length;
+  const countAbs=sid=>absences.filter(a=>a.eleve===sid&&a.type==="Absence").length;
+  const HEURES=["7h30","8h25","9h25","10h20","11h15","13h30","14h25","15h20"];
+
+  return <div>
+    <div className="rowb mb3">
+      <div><h2 style={{fontSize:"1.15rem"}}>Gestion des absences</h2>
+        <div className="sub">{absences.length} signalement(s) · <span style={{color:"var(--err)"}}>{nj} non justifiée(s)</span></div></div>
+      <button className="btn b-gold" onClick={()=>setModal(true)}>+ Signaler</button>
+    </div>
+    <div className="sg mb3">
+      {[{n:absences.length,l:"Total",i:"📋"},{n:absences.filter(a=>a.type==="Absence").length,l:"Absences",i:"❌"},
+        {n:absences.filter(a=>a.type==="Retard").length,l:"Retards",i:"⏰"},{n:nj,l:"Non justifiées",i:"🔴"}]
+        .map((s,i)=><div className="sc" key={i}><div className="sc-i">{s.i}</div><div className="sc-n">{s.n}</div><div className="sc-l">{s.l}</div></div>)}
+    </div>
+    <div className="tw mb3">
+      <table><thead><tr><th>Élève</th><th>Classe</th><th>Date</th><th>Heure</th><th>Type</th><th>Motif</th><th>Justifié</th><th>Actions</th></tr></thead>
+      <tbody>
+        {absences.length===0?<tr><td colSpan={8}><div className="empty"><div className="ei">✅</div>Aucune absence</div></td></tr>:
+        absences.map(a=>{const st=findSt(a.eleve);return <tr key={a.id}>
+          <td>{st?<div className="row g2"><Av prenom={st.prenom||st.nom} nom={st.nom} size={26}/>
+            <span style={{marginLeft:7,fontWeight:500,fontSize:".8rem"}}>{st.prenom?`${st.prenom} ${st.nom}`:st.nom}</span></div>:a.eleve}</td>
+          <td className="sub">{st?.classe}</td><td className="sub">{a.date}</td><td className="sub">{a.heure}</td>
+          <td><span className={`chip ${a.type==="Absence"?"c-err":"c-warn"}`}>{a.type}</span></td>
+          <td className="sub">{a.motif||"—"}</td>
+          <td><span className={`chip ${a.justifie?"c-ok":"c-err"}`} style={{cursor:"pointer"}} onClick={()=>toggle(a.id)}>
+            {a.justifie?"✓ Oui":"✗ Non"}</span></td>
+          <td><button className="btn b-err b-xs" onClick={()=>del(a.id)}>🗑️</button></td>
+        </tr>;})}
+      </tbody></table>
+    </div>
+    <div className="card">
+      <h3 style={{fontSize:".95rem",marginBottom:12}}>⚠️ Élèves à convoquer (≥ 2 absences)</h3>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:8}}>
+        {students.filter(s=>countAbs(s.id)>=2).map(s=><div className="ci" key={s.id} style={{borderLeft:"3px solid var(--err)"}}>
+          <div className="row g2"><Av prenom={s.prenom||s.nom} nom={s.nom} size={26}/>
+            <div style={{marginLeft:8}}><div style={{fontWeight:500,fontSize:".8rem"}}>{s.prenom?`${s.prenom} ${s.nom}`:s.nom}</div>
+              <div className="sub" style={{fontSize:".68rem"}}>{s.classe} · {countAbs(s.id)} absences</div></div></div>
+        </div>)}
+        {students.filter(s=>countAbs(s.id)>=2).length===0&&<div className="sub">Aucun élève concerné.</div>}
+      </div>
+    </div>
+    {modal&&<Modal title="➕ Signaler une absence / retard" onClose={()=>setModal(false)}>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <div className="fg"><label>Élève</label>
+          <select value={f.eleve} onChange={up("eleve")}>
+            {students.map(s=><option key={s.id} value={s.id}>{s.prenom?`${s.prenom} ${s.nom}`:s.nom} ({s.classe})</option>)}</select></div>
+        <div className="fg2">
+          <div className="fg"><label>Date</label><input type="date" value={f.date} onChange={up("date")}/></div>
+          <div className="fg"><label>Heure</label><select value={f.heure} onChange={up("heure")}>{HEURES.map(h=><option key={h}>{h}</option>)}</select></div>
+          <div className="fg"><label>Type</label><select value={f.type} onChange={up("type")}><option>Absence</option><option>Retard</option></select></div>
+          <div className="fg"><label>Motif</label><input placeholder="Maladie, RDV…" value={f.motif} onChange={up("motif")}/></div>
+        </div>
+        <div className="row g2" style={{alignItems:"center"}}>
+          <input type="checkbox" id="just" checked={f.justifie} onChange={up("justifie")}/>
+          <label htmlFor="just" style={{cursor:"pointer",color:"var(--tx)"}}>Absence justifiée (document fourni)</label></div>
+      </div>
+      <div className="row g2 mt3" style={{justifyContent:"flex-end"}}>
+        <button className="btn b-ghost" onClick={()=>setModal(false)}>Annuler</button>
+        <button className="btn b-gold" onClick={add}>Enregistrer</button>
+      </div>
+    </Modal>}
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   HÉBERGEMENT GITHUB — Guide intégré
+   ══════════════════════════════════════════════════════════ */
+function GuideHebergement(){
+  const [etape,setEtape]=useState(0);
+  const etapes=[
+    {titre:"Créer un compte GitHub",
+     contenu:<div>
+       <div className="info-box mb3">GitHub Pages est <strong>gratuit</strong> et permet d'héberger ce site en ligne avec une URL publique.</div>
+       <div className="row g2 mb3"><span className="step-num">1</span><div>Allez sur <a href="https://github.com" target="_blank" style={{color:"var(--gold)"}}>github.com</a> et cliquez sur <strong>"Sign up"</strong></div></div>
+       <div className="row g2 mb3"><span className="step-num">2</span><div>Choisissez un nom d'utilisateur (ex: <code style={{background:"var(--s3)",padding:"1px 5px",borderRadius:3}}>ipmn-gabon</code>)</div></div>
+       <div className="row g2 mb3"><span className="step-num">3</span><div>Entrez votre email et créez un mot de passe → Validez votre compte</div></div>
+       <div className="ok-box">✅ Une fois le compte créé, passez à l'étape suivante</div>
+     </div>},
+    {titre:"Créer le dépôt",
+     contenu:<div>
+       <div className="row g2 mb3"><span className="step-num">1</span><div>Connecté sur GitHub, cliquez sur le <strong>"+"</strong> en haut à droite → <strong>"New repository"</strong></div></div>
+       <div className="row g2 mb3"><span className="step-num">2</span><div>Nommez le dépôt exactement : <div className="code-block" style={{margin:"8px 0"}}>ipmn-gestion</div></div></div>
+       <div className="row g2 mb3"><span className="step-num">3</span><div>Cochez <strong>"Public"</strong> et cochez <strong>"Add a README file"</strong></div></div>
+       <div className="row g2 mb3"><span className="step-num">4</span><div>Cliquez sur <strong>"Create repository"</strong></div></div>
+     </div>},
+    {titre:"Uploader le fichier HTML",
+     contenu:<div>
+       <div className="row g2 mb3"><span className="step-num">1</span><div>Dans votre dépôt, cliquez sur <strong>"Add file"</strong> → <strong>"Upload files"</strong></div></div>
+       <div className="row g2 mb3"><span className="step-num">2</span><div>Glissez le fichier <code style={{background:"var(--s3)",padding:"1px 5px",borderRadius:3}}>lyceegest.html</code> dans la zone</div></div>
+       <div className="row g2 mb3"><span className="step-num">3</span><div>⚠️ Renommez-le <strong>OBLIGATOIREMENT</strong> en <strong>index.html</strong> avant d'uploader</div></div>
+       <div className="row g2 mb3"><span className="step-num">4</span><div>Cliquez <strong>"Commit changes"</strong></div></div>
+       <div className="err-box">⚠️ Le fichier doit s'appeler exactement <strong>index.html</strong> (pas lyceegest.html)</div>
+     </div>},
+    {titre:"Activer GitHub Pages",
+     contenu:<div>
+       <div className="row g2 mb3"><span className="step-num">1</span><div>Dans votre dépôt, cliquez sur <strong>"Settings"</strong> (onglet en haut)</div></div>
+       <div className="row g2 mb3"><span className="step-num">2</span><div>Dans le menu de gauche, cliquez sur <strong>"Pages"</strong></div></div>
+       <div className="row g2 mb3"><span className="step-num">3</span><div>Sous "Source", sélectionnez <strong>"Deploy from a branch"</strong></div></div>
+       <div className="row g2 mb3"><span className="step-num">4</span><div>Branch : <strong>main</strong> · Folder : <strong>/ (root)</strong> → Cliquez <strong>"Save"</strong></div></div>
+       <div className="row g2 mb3"><span className="step-num">5</span><div>Attendez ~2 minutes, puis votre URL sera :<div className="code-block" style={{margin:"8px 0"}}>https://VOTRE-USERNAME.github.io/ipmn-gestion/</div></div></div>
+       <div className="ok-box">🎉 Votre site IPMN est maintenant en ligne et accessible depuis n'importe où !</div>
+     </div>},
+    {titre:"Modifier le code facilement",
+     contenu:<div>
+       <div className="info-box mb3">Pour modifier le site, vous n'avez pas besoin de compiler. Tout est dans le fichier <strong>index.html</strong>.</div>
+       <div className="row g2 mb3"><span className="step-num">1</span><div><strong>Sur GitHub directement</strong> : cliquez sur <code>index.html</code> → cliquez sur ✏️ → modifiez → "Commit changes"</div></div>
+       <div className="row g2 mb3"><span className="step-num">2</span><div><strong>Sur VSCode</strong> : ouvrez le fichier, modifiez, sauvegardez, puis re-uploadez sur GitHub</div></div>
+       <div className="sep"/>
+       <h4 style={{fontSize:".88rem",marginBottom:8}}>📍 Où modifier les données dans le code ?</h4>
+       {[
+         {section:"SCHOOL_INFO_DEFAULT",desc:"Nom, adresse, téléphone, email, proviseure"},
+         {section:"CLASSES_IPMN",desc:"Liste complète des classes IPMN"},
+         {section:"MATIERES_APC",desc:"Matières, couleurs et coefficients"},
+         {section:"FRAIS_SCOLARITE",desc:"Montants des frais par niveau"},
+         {section:"STUDENTS_INIT",desc:"Données initiales des élèves"},
+         {section:"PROFS_INIT",desc:"Données des enseignants"},
+       ].map(r=><div key={r.section} style={{display:"flex",gap:10,padding:"6px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+         <code style={{background:"var(--s3)",padding:"2px 7px",borderRadius:3,fontSize:".72rem",color:"var(--gold)",flexShrink:0}}>{r.section}</code>
+         <span className="sub" style={{fontSize:".76rem"}}>{r.desc}</span>
+       </div>)}
+     </div>},
+  ];
+
+  return <div>
+    <h2 style={{fontSize:"1.15rem",marginBottom:18}}>🌐 Hébergement GitHub Pages</h2>
+    {/* Barre de progression */}
+    <div className="row g2 mb4" style={{flexWrap:"wrap"}}>
+      {etapes.map((e,i)=><div key={i} className="row g2" style={{cursor:"pointer"}} onClick={()=>setEtape(i)}>
+        <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
+          background:i<=etape?"var(--gold)":"var(--s3)",color:i<=etape?"#fff":"var(--sub)",fontWeight:700,fontSize:".78rem",flexShrink:0}}>
+          {i<etape?"✓":i+1}</div>
+        {i<etapes.length-1&&<div style={{width:24,height:2,background:i<etape?"var(--gold)":"var(--s3)",flexShrink:0}}/>}
+      </div>)}
+    </div>
+
+    <div className="card">
+      <div className="rowb mb3">
+        <h3 style={{fontSize:"1rem"}}>Étape {etape+1} — {etapes[etape].titre}</h3>
+        <div className="row g2">
+          {etape>0&&<button className="btn b-out b-sm" onClick={()=>setEtape(e=>e-1)}>← Précédente</button>}
+          {etape<etapes.length-1&&<button className="btn b-gold b-sm" onClick={()=>setEtape(e=>e+1)}>Suivante →</button>}
+          {etape===etapes.length-1&&<span className="chip c-ok">✓ Guide terminé !</span>}
+        </div>
+      </div>
+      {etapes[etape].contenu}
+    </div>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PARAMÈTRES ADMIN
+   ══════════════════════════════════════════════════════════ */
+function Parametres({user}){
+  const {schoolInfo,setSchoolInfo,toast}=useApp();
+  const [f,setF]=useState({...schoolInfo});
+  const up=k=>e=>setF(p=>({...p,[k]:e.target.value}));
+  const save=()=>{setSchoolInfo(f);toast("Paramètres enregistrés ✓","success");};
+
+  return <div>
+    <h2 style={{fontSize:"1.15rem",marginBottom:18}}>⚙️ Paramètres du système</h2>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+      <div className="card">
+        <h3 style={{fontSize:".95rem",marginBottom:14}}>🏫 Informations de l'établissement</h3>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {[{k:"nom",l:"Nom complet"},{k:"sigle",l:"Sigle"},{k:"adresse",l:"Adresse"},
+            {k:"tel",l:"Téléphone"},{k:"email",l:"Email"},{k:"fondation",l:"Fondation"},
+            {k:"proviseure",l:"Proviseure"},{k:"annee",l:"Année scolaire"},{k:"trimestre",l:"Trimestre en cours"}]
+            .map(field=><div className="fg" key={field.k}>
+              <label>{field.l}</label><input value={f[field.k]||""} onChange={up(field.k)}/></div>)}
+          <button className="btn b-gold mt1" onClick={save}>💾 Enregistrer</button>
+        </div>
+      </div>
+      <div>
+        <div className="card mb3">
+          <h3 style={{fontSize:".95rem",marginBottom:14}}>🔐 Mon compte</h3>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div className="fg"><label>Nom</label><input defaultValue={user.nom}/></div>
+            <div className="fg"><label>Prénom</label><input defaultValue={user.prenom}/></div>
+            <div className="fg"><label>Email</label><input defaultValue={user.email}/></div>
+            <div className="fg"><label>Nouveau mot de passe</label><input type="password" placeholder="••••••••"/></div>
+            <div className="fg"><label>Confirmer</label><input type="password" placeholder="••••••••"/></div>
+            <button className="btn b-gold mt1">🔑 Modifier</button>
+          </div>
+        </div>
+        <div className="card">
+          <h3 style={{fontSize:".95rem",marginBottom:10}}>📋 Système</h3>
+          <div style={{display:"flex",flexDirection:"column",gap:8,fontSize:".8rem"}}>
+            {[{l:"Version",v:"2.0 — IPMN"},{l:"Technologie",v:"HTML + React (CDN)"},{l:"Hébergement",v:"GitHub Pages (gratuit)"},{l:"Données",v:"Stockage local (navigateur)"}]
+              .map(r=><div className="rowb" key={r.l} style={{padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+                <span className="sub">{r.l}</span><span style={{fontWeight:600}}>{r.v}</span></div>)}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PROFIL ÉLÈVE
+   ══════════════════════════════════════════════════════════ */
+function ProfilEleve({user}){
+  const {students,schoolInfo}=useApp();
+  const me=students.find(s=>s.email===user.email)||students[0];
+  if(!me)return <div className="empty"><div className="ei">👤</div>Profil introuvable</div>;
+  const moy=calcMoyNote(me.notes||{});
+  const p=me.paiements||{};
+  const niv=getNiveau(me.classe)||"5ème";
+  const frais=FRAIS_SCOLARITE[niv]||FRAIS_SCOLARITE["5ème"];
+
+  return <div>
+    <div className="card mb3" style={{display:"flex",gap:18,alignItems:"center",flexWrap:"wrap"}}>
+      <Av prenom={me.prenom||me.nom} nom={me.nom} size={66}/>
+      <div style={{flex:1}}>
+        <h2 style={{fontSize:"1.4rem"}}>{me.prenom} {me.nom}</h2>
+        <div className="sub mt1">{me.matricule} · {me.email}</div>
+        <div className="row g2 mt2">
+          <span className={`chip ${sc_chip(me.statut)}`}>{me.statut}</span>
+          <span className="chip c-info">{me.classe}</span>
+          <span className="chip c-gold">{schoolInfo.annee}</span>
+        </div>
+      </div>
+      <div style={{textAlign:"center",padding:"11px 20px",background:"var(--s2)",borderRadius:"var(--r)"}}>
+        <div style={{fontSize:"2rem",fontWeight:700,fontFamily:"'Playfair Display',serif",color:nc(parseFloat(moy))}}>{moy}</div>
+        <div className="sub" style={{fontSize:".7rem"}}>/20 — Moy. générale</div>
+      </div>
+    </div>
+
+    <h3 style={{fontSize:".95rem",marginBottom:12}}>📊 Mes résultats (Paliers APC)</h3>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(185px,1fr))",gap:11,marginBottom:20}}>
+      {Object.entries(me.notes||{}).filter(([,n])=>n.p1||n.p2).map(([m,n])=>{
+        const best=Math.max(n.p1||0,n.rp1||0);
+        const vals=[best,n.p2,n.dm].filter(x=>x>0);
+        const mo=vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):"-";
+        const col=MATIERES_APC[m]?.color||"var(--gold)";
+        return <div className="card" key={m} style={{textAlign:"center"}}>
+          <div style={{width:7,height:7,borderRadius:"50%",background:col,margin:"0 auto 6px"}}/>
+          <div style={{fontSize:"1.6rem",fontWeight:700,color:nc(parseFloat(mo))}}>{mo}</div>
+          <div style={{fontSize:".72rem",fontWeight:600,color:"var(--sub)"}}>/20 · {m}</div>
+          <div className="pb mt2"><div className="pf" style={{width:`${parseFloat(mo)/20*100}%`,background:parseFloat(mo)>=10?col:"var(--err)"}}/></div>
+          <div className="row g1 mt2" style={{justifyContent:"center"}}>
+            <span className="tag" style={{fontSize:".6rem"}}>P1:{n.p1||0}</span>
+            <span className="tag" style={{fontSize:".6rem"}}>P2:{n.p2||0}</span>
+          </div>
+        </div>;
+      })}
+    </div>
+
+    <h3 style={{fontSize:".95rem",marginBottom:12}}>💰 Mes paiements</h3>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
+      {[{k:"inscription",l:"Inscription",m:frais.inscription},{k:"tranche1",l:"Tranche 1",m:frais.tranche1},{k:"tranche2",l:"Tranche 2",m:frais.tranche2},{k:"tranche3",l:"Tranche 3",m:frais.tranche3}]
+        .map(item=><div className="ci" key={item.k} style={{textAlign:"center",borderBottom:`3px solid ${p[item.k]==="payé"?"var(--ok)":p[item.k]==="partiel"?"var(--warn)":"var(--err)"}`}}>
+          <div style={{fontWeight:600,fontSize:".82rem"}}>{item.l}</div>
+          <div className="sub" style={{fontSize:".7rem"}}>{fmtXAF(item.m)}</div>
+          <span className={`chip mt2 ${paiChip(p[item.k]||"non")}`}>{paiLabel(p[item.k]||"non")}</span>
+        </div>)}
+    </div>
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   NAVIGATION IPMN
+   ══════════════════════════════════════════════════════════ */
+const NAV={
+  admin:[
+    {sec:"Vue d'ensemble",items:[{id:"dash",ic:"📊",l:"Tableau de bord"}]},
+    {sec:"Scolarité",items:[
+      {id:"eleves",ic:"🎒",l:"Élèves"},
+      {id:"notes",ic:"📝",l:"Notes APC"},
+      {id:"conseil",ic:"📋",l:"Conseil de classe"},
+      {id:"absences",ic:"📅",l:"Absences"},
+    ]},
+    {sec:"Comptabilité",items:[
+      {id:"compta",ic:"💰",l:"Frais de scolarité"},
+    ]},
+    {sec:"Communication",items:[
+      {id:"annonces",ic:"📣",l:"Annonces"},
+    ]},
+    {sec:"Administration",items:[
+      {id:"params",ic:"⚙️",l:"Paramètres"},
+      {id:"github",ic:"🌐",l:"Hébergement"},
+    ]},
+  ],
+  censeur:[
+    {sec:"Scolarité",items:[{id:"eleves",ic:"🎒",l:"Élèves"},{id:"notes",ic:"📝",l:"Notes APC"},{id:"conseil",ic:"📋",l:"Conseil de classe"},{id:"absences",ic:"📅",l:"Absences"}]},
+    {sec:"Communication",items:[{id:"annonces",ic:"📣",l:"Annonces"}]},
+  ],
+  comptable:[
+    {sec:"Comptabilité",items:[{id:"dash",ic:"📊",l:"Tableau de bord"},{id:"compta",ic:"💰",l:"Frais de scolarité"}]},
+  ],
+  professeur:[
+    {sec:"Espace prof",items:[{id:"notes",ic:"📝",l:"Notes APC"},{id:"absences",ic:"📅",l:"Absences"},{id:"annonces",ic:"📣",l:"Annonces"}]},
+  ],
+  eleve:[
+    {sec:"Mon espace",items:[{id:"profil",ic:"👤",l:"Mon profil"},{id:"annonces",ic:"📣",l:"Annonces"}]},
+  ],
+};
+
+const TITLES={dash:"Tableau de bord",eleves:"Gestion des élèves",notes:"Notes APC — Paliers",
+  conseil:"Conseil de classe",absences:"Absences",compta:"Comptabilité scolaire",
+  annonces:"Annonces & Agenda",params:"Paramètres",github:"Hébergement GitHub Pages",profil:"Mon profil"};
+
+/* ══════════════════════════════════════════════════════════
+   ANNONCES (simple)
+   ══════════════════════════════════════════════════════════ */
+function Annonces(){
+  const [anns,setAnns]=useState(ANNONCES_INIT);
+  const [modal,setModal]=useState(false);
+  const [f,setF]=useState({titre:"",date:"",type:"Réunion",cible:"Tous",contenu:"",auteur:"Direction"});
+  const up=k=>e=>setF(p=>({...p,[k]:e.target.value}));
+  const add=()=>{setAnns(p=>[...p,{...f,id:p.length+1}]);setModal(false);};
+  const tc={Examen:"c-err",Bulletin:"c-ok",Conseil:"c-gold",Réunion:"c-info",Administratif:"c-purple"};
+
+  return <div>
+    <div className="rowb mb3">
+      <div><h2 style={{fontSize:"1.15rem"}}>Annonces & Agenda</h2><div className="sub">{anns.length} annonce(s)</div></div>
+      <button className="btn b-gold" onClick={()=>setModal(true)}>+ Nouvelle annonce</button>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:13}}>
+      {anns.map(a=><div className="card" key={a.id} style={{borderTop:"3px solid var(--gold)"}}>
+        <div className="rowb mb2">
+          <span className={`chip ${tc[a.type]||"c-gold"}`}>{a.type}</span>
+          <span className="sub" style={{fontSize:".68rem"}}>{a.date}</span>
+        </div>
+        <h3 style={{fontSize:".95rem",marginBottom:6}}>{a.titre}</h3>
+        <div className="sub" style={{fontSize:".78rem",lineHeight:1.6,marginBottom:9}}>{a.contenu}</div>
+        <div className="row g2 sub" style={{fontSize:".68rem"}}>
+          <span>👤 {a.auteur}</span><span>·</span><span>🎯 {a.cible}</span>
+        </div>
+      </div>)}
+    </div>
+    {modal&&<Modal title="📣 Nouvelle annonce" onClose={()=>setModal(false)}>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        <div className="fg"><label>Titre</label><input value={f.titre} onChange={up("titre")}/></div>
+        <div className="fg2">
+          <div className="fg"><label>Date</label><input type="date" value={f.date} onChange={up("date")}/></div>
+          <div className="fg"><label>Type</label><select value={f.type} onChange={up("type")}><option>Réunion</option><option>Examen</option><option>Bulletin</option><option>Conseil</option><option>Administratif</option></select></div>
+          <div className="fg"><label>Cible</label><select value={f.cible} onChange={up("cible")}><option>Tous</option><option>Terminales</option><option>Premières</option><option>Secondes</option><option>3ème</option><option>5ème</option><option>6ème</option><option>Enseignants</option></select></div>
+          <div className="fg"><label>Auteur</label><input value={f.auteur} onChange={up("auteur")}/></div>
+        </div>
+        <div className="fg"><label>Contenu</label><textarea rows={4} value={f.contenu} onChange={up("contenu")}/></div>
+      </div>
+      <div className="row g2 mt3" style={{justifyContent:"flex-end"}}>
+        <button className="btn b-ghost" onClick={()=>setModal(false)}>Annuler</button>
+        <button className="btn b-gold" onClick={add}>Publier</button>
+      </div>
+    </Modal>}
+  </div>;
+}
+
+/* ══════════════════════════════════════════════════════════
+   APP ROOT
+   ══════════════════════════════════════════════════════════ */
+function App(){
+  const [user,setUser]=useState(null);
+  const [page,setPage]=useState("dash");
+  const [students,setStudents]=useState(STUDENTS_INIT);
+  const [profs,setProfs]=useState(PROFS_INIT);
+  const [absences,setAbsences]=useState(ABSENCES_INIT);
+  const [schoolInfo,setSchoolInfo]=useState(SCHOOL_INFO_DEFAULT);
+  const [tst,setTst]=useState(null);
+
+  const toast=(msg,type="info")=>setTst({msg,type});
+  const logout=()=>{setUser(null);setPage("dash");};
+  const defaultPage=r=>r==="eleve"?"profil":r==="comptable"?"compta":"dash";
+
+  const renderPage=()=>{
+    switch(page){
+      case"dash":    return <Dashboard/>;
+      case"eleves":  return <Eleves/>;
+      case"notes":   return <Notes/>;
+      case"conseil": return <ConseilClasse/>;
+      case"absences":return <Absences/>;
+      case"compta":  return <Comptabilite/>;
+      case"annonces":return <Annonces/>;
+      case"params":  return <Parametres user={user}/>;
+      case"github":  return <GuideHebergement/>;
+      case"profil":  return <ProfilEleve user={user}/>;
+      default:       return <div className="empty"><div className="ei">🚧</div>Module en cours de développement</div>;
+    }
+  };
+
+  if(!user)return <Auth onLogin={u=>{setUser(u);setPage(defaultPage(u.role));}}/>;
+
+  const nav=NAV[user.role]||NAV.eleve;
+
+  return <Ctx.Provider value={{students,setStudents,profs,setProfs,absences,setAbsences,schoolInfo,setSchoolInfo,toast}}>
+    <div className="shell">
+      {/* ── SIDEBAR ── */}
+      <aside className="sidebar">
+        <div className="sb-logo">
+          <div className="logo-icon">🏫</div>
+          <h2>Inst. Privée<br/>Marie NDZABA</h2>
+          <p>Franceville, Gabon</p>
+          <div className="badge-ipmn">IPMN · {schoolInfo.annee}</div>
+        </div>
+        <div className="sb-nav">
+          {nav.map(sec=><div key={sec.sec}>
+            <div className="sb-sec">{sec.sec}</div>
+            {sec.items.map(it=><div key={it.id} className={`sb-item${page===it.id?" on":""}`} onClick={()=>setPage(it.id)}>
+              <span className="ic">{it.ic}</span>
+              <span>{it.l}</span>
+              {it.badge&&<span className="pill">{it.badge}</span>}
+            </div>)}
+          </div>)}
+        </div>
+        <div className="sb-foot">
+          <Av prenom={user.prenom||user.nom||"?"} nom={user.nom||""} size={30}/>
+          <div style={{flex:1,overflow:"hidden",marginLeft:7}}>
+            <div style={{fontWeight:600,fontSize:".8rem",color:"var(--tx)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+              {user.prenom?`${user.prenom} ${user.nom}`:user.nom}</div>
+            <div className="sub" style={{fontSize:".65rem",textTransform:"capitalize"}}>{user.poste||user.role}</div>
+          </div>
+          <button className="btn b-ghost b-ic" title="Déconnexion" onClick={logout}>↩</button>
+        </div>
+      </aside>
+
+      {/* ── MAIN ── */}
+      <div className="main">
+        <div className="topbar">
+          <h1>{TITLES[page]||"IPMN"}</h1>
+          <div className="row g3">
+            <span className="sub" style={{fontSize:".74rem"}}>Année {schoolInfo.annee} · {schoolInfo.trimestre}</span>
+            <span className="chip c-gold" style={{textTransform:"capitalize"}}>{user.poste||user.role}</span>
+          </div>
+        </div>
+        <div className="page">{renderPage()}</div>
+      </div>
+    </div>
+    {tst&&<Toast msg={tst.msg} type={tst.type} onClose={()=>setTst(null)}/>}
+  </Ctx.Provider>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
